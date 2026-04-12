@@ -11,8 +11,7 @@ use internet_uptime_monitor::{
 };
 use std::{fs::OpenOptions, path::PathBuf, sync::Arc};
 
-const HELP: &str = "Internet Uptime Monitor 0.1.0
-Quiet, local connection monitoring. No account or session limits.
+const HELP: &str = "Quiet, local connection monitoring. No account or session limits.
 
 Usage: internet-uptime-monitor.exe [OPTIONS]
 
@@ -119,7 +118,7 @@ fn run() -> Result<i32> {
     }
     let options = Options::parse()?;
     if options.help {
-        print!("{HELP}");
+        println!("Internet Uptime Monitor {}\n{HELP}", updates::VERSION);
         return Ok(0);
     }
     if options.version {

@@ -254,6 +254,7 @@ fn client(seconds: u64) -> ureq::Agent {
         .tls_config(
             ureq::tls::TlsConfig::builder()
                 .provider(ureq::tls::TlsProvider::NativeTls)
+                .root_certs(ureq::tls::RootCerts::PlatformVerifier)
                 .build(),
         )
         .build()
@@ -631,6 +632,13 @@ pub fn cleanup(data: &Path) {
 mod tests {
     use super::*;
     use serde_json::json;
+    #[test]
+    fn native_tls_explicitly_uses_the_platform_certificate_store() {
+        assert!(matches!(
+            client(1).config().tls_config().root_certs(),
+            ureq::tls::RootCerts::PlatformVerifier
+        ));
+    }
     fn release() -> serde_json::Value {
         let prefix = format!("https://github.com/{REPOSITORY}/releases/download/v0.2.0/");
         json!({"tag_name":"v0.2.0","draft":false,"prerelease":false,"html_url":format!("https://github.com/{REPOSITORY}/releases/tag/v0.2.0"),"assets":[{"name":EXE,"size":2000,"browser_download_url":format!("{prefix}{EXE}")},{"name":"SHA256SUMS.txt","browser_download_url":format!("{prefix}SHA256SUMS.txt")}]})
