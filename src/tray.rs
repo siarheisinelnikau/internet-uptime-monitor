@@ -13,7 +13,6 @@ mod windows {
     const CALLBACK: u32 = WM_APP + 1;
     struct Context {
         app: Arc<App>,
-        port: u16,
         data: PathBuf,
         icon: NOTIFYICONDATAW,
         taskbar_created: u32,
@@ -40,11 +39,11 @@ mod windows {
                 if message == CALLBACK {
                     match lparam as u32 {
                         WM_LBUTTONDBLCLK => {
-                            let _ = platform::open_dashboard(context.port);
+                            context.app.request_window();
                         }
                         WM_RBUTTONUP | WM_CONTEXTMENU => {
                             let menu = CreatePopupMenu();
-                            AppendMenuW(menu, MF_STRING, 1001, wide("Open dashboard").as_ptr());
+                            AppendMenuW(menu, MF_STRING, 1001, wide("Open monitor").as_ptr());
                             AppendMenuW(
                                 menu,
                                 MF_STRING,
@@ -87,7 +86,7 @@ mod windows {
                             PostMessageW(window, WM_NULL, 0, 0);
                             match command {
                                 1001 => {
-                                    let _ = platform::open_dashboard(context.port);
+                                    context.app.request_window();
                                 }
                                 1002 => {
                                     let _ = context.app.control(if context.app.snapshot().paused {
@@ -100,9 +99,10 @@ mod windows {
                                     if let Err(error) = platform::set_startup(
                                         !platform::startup_enabled(),
                                         &context.data,
-                                        context.port,
                                     ) {
-                                        platform::show_error(&error.to_string());
+                                        *context.app.ui_notice.lock().expect("notice") =
+                                            Some(error.to_string());
+                                        context.app.request_window();
                                     }
                                 }
                                 1004 => context.app.stop(),
@@ -122,7 +122,7 @@ mod windows {
         }
     }
 
-    pub fn run(app: Arc<App>, port: u16, data: PathBuf) -> Result<()> {
+    pub fn run(app: Arc<App>, data: PathBuf) -> Result<()> {
         unsafe {
             let instance = GetModuleHandleW(ptr::null());
             let class_name = wide("InternetUptimeMonitorTray");
@@ -172,7 +172,6 @@ mod windows {
             let taskbar_created = RegisterWindowMessageW(wide("TaskbarCreated").as_ptr());
             let mut context = Box::new(Context {
                 app: app.clone(),
-                port,
                 data,
                 icon,
                 taskbar_created,
@@ -186,6 +185,8 @@ mod windows {
                 DestroyWindow(window);
                 bail!("Could not add the tray icon.");
             }
+            app.tray_available
+                .store(true, std::sync::atomic::Ordering::Release);
             let mut last_tip = String::new();
             while !app.is_stopping() {
                 let mut message = MSG::default();
@@ -223,6 +224,8 @@ mod windows {
                 thread::sleep(Duration::from_millis(100));
             }
             Shell_NotifyIconW(NIM_DELETE, &context.icon);
+            app.tray_available
+                .store(false, std::sync::atomic::Ordering::Release);
             SetWindowLongPtrW(window, GWLP_USERDATA, 0);
             DestroyWindow(window);
         }
@@ -236,7 +239,6 @@ pub use windows::run;
 #[cfg(not(windows))]
 pub fn run(
     app: std::sync::Arc<crate::monitor::App>,
-    _port: u16,
     _data: std::path::PathBuf,
 ) -> anyhow::Result<()> {
     while !app.is_stopping() {

@@ -22,22 +22,6 @@ pub fn data_dir() -> PathBuf {
         })
         .join("internet-uptime-monitor");
 }
-pub fn open_dashboard(port: u16) -> Result<()> {
-    let url = format!("http://127.0.0.1:{port}");
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        std::process::Command::new("rundll32.exe")
-            .args(["url.dll,FileProtocolHandler", &url])
-            .creation_flags(0x08000000)
-            .spawn()?;
-    }
-    #[cfg(target_os = "macos")]
-    std::process::Command::new("open").arg(url).spawn()?;
-    #[cfg(all(not(windows), not(target_os = "macos")))]
-    std::process::Command::new("xdg-open").arg(url).spawn()?;
-    Ok(())
-}
 pub fn local_request(port: u16, method: &str, path: &str) -> Result<serde_json::Value> {
     let address = SocketAddr::from(([127, 0, 0, 1], port));
     let mut stream = TcpStream::connect_timeout(&address, Duration::from_secs(3))?;
@@ -74,7 +58,7 @@ fn wide(value: &str) -> Vec<u16> {
 }
 
 #[cfg(windows)]
-pub fn set_startup(enable: bool, data: &Path, port: u16) -> Result<()> {
+pub fn set_startup(enable: bool, data: &Path) -> Result<()> {
     use std::ptr;
     use windows_sys::Win32::System::Registry::*;
     let key_name = wide("Software\\Microsoft\\Windows\\CurrentVersion\\Run");
@@ -94,7 +78,7 @@ pub fn set_startup(enable: bool, data: &Path, port: u16) -> Result<()> {
         let code = if enable {
             let exe = std::env::current_exe()?;
             let command = wide(&format!(
-                "\"{}\" --no-browser --data-dir \"{}\" --port {port}",
+                "\"{}\" --background --data-dir \"{}\"",
                 exe.display(),
                 data.display()
             ));
@@ -148,19 +132,13 @@ pub fn startup_enabled() -> bool {
 }
 
 #[cfg(not(windows))]
-pub fn set_startup(_enable: bool, _data: &Path, _port: u16) -> Result<()> {
+pub fn set_startup(_enable: bool, _data: &Path) -> Result<()> {
     bail!("Automatic sign-in startup is currently available on Windows only.")
 }
 
 pub fn show_error(message: &str) {
     eprintln!("{message}");
-    #[cfg(windows)]
-    unsafe {
-        windows_sys::Win32::UI::WindowsAndMessaging::MessageBoxW(
-            std::ptr::null_mut(),
-            wide(message).as_ptr(),
-            wide("Internet Uptime Monitor").as_ptr(),
-            0x10,
-        );
-    }
+    let data = data_dir();
+    let _ = std::fs::create_dir_all(&data);
+    let _ = std::fs::write(data.join("startup-error.log"), message);
 }

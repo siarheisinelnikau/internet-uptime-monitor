@@ -11,7 +11,12 @@ use std::sync::{
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
+pub type UiWaker = Box<dyn Fn(bool) + Send + Sync>;
 pub struct App {
+    pub tray_available: AtomicBool,
+    pub window_visible: AtomicBool,
+    pub ui_notice: Mutex<Option<String>>,
+    ui_waker: Mutex<Option<UiWaker>>,
     pub updates: Arc<crate::updates::Updater>,
     pub store: Mutex<Store>,
     pub status: Mutex<Status>,
@@ -25,6 +30,10 @@ impl App {
         let latest = if demo { store.latest()? } else { None };
         let gateway = latest.as_ref().and_then(|s| s.router.address.clone());
         Ok(Arc::new(Self {
+            tray_available: AtomicBool::new(false),
+            window_visible: AtomicBool::new(true),
+            ui_notice: Mutex::new(None),
+            ui_waker: Mutex::new(None),
             updates: Arc::new(crate::updates::Updater::default()),
             store: Mutex::new(store),
             status: Mutex::new(Status {
@@ -77,6 +86,18 @@ impl App {
     pub fn stop(&self) {
         self.stopping.store(true, Ordering::Release);
         self.wake.notify_all();
+        if let Some(wake) = self.ui_waker.lock().expect("UI waker").as_ref() {
+            wake(false);
+        }
+    }
+    pub fn set_ui_waker(&self, wake: UiWaker) {
+        *self.ui_waker.lock().expect("UI waker") = Some(wake);
+    }
+    pub fn request_window(&self) {
+        self.window_visible.store(true, Ordering::Release);
+        if let Some(wake) = self.ui_waker.lock().expect("UI waker").as_ref() {
+            wake(true);
+        }
     }
     pub fn is_stopping(&self) -> bool {
         self.stopping.load(Ordering::Acquire)
