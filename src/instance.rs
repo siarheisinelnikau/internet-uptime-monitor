@@ -52,6 +52,13 @@ pub fn read(data: &Path, demo: bool) -> Option<Session> {
             .all(|b| b.is_ascii_alphanumeric() || b == b'-'))
     .then_some(session)
 }
+pub fn is_locked(data: &Path, demo: bool) -> bool {
+    let path = data.join(if demo { "demo.lock" } else { "monitor.lock" });
+    let Ok(file) = OpenOptions::new().read(true).write(true).open(path) else {
+        return false;
+    };
+    file.try_lock_exclusive().is_err()
+}
 fn atomic_write(path: &Path, bytes: &[u8]) -> Result<()> {
     let mut file = tempfile::Builder::new()
         .prefix(".pending-")
