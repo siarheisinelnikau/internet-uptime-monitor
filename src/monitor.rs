@@ -93,6 +93,9 @@ impl App {
     pub fn set_ui_waker(&self, wake: UiWaker) {
         *self.ui_waker.lock().expect("UI waker") = Some(wake);
     }
+    pub fn clear_ui_waker(&self) {
+        *self.ui_waker.lock().expect("UI waker") = None;
+    }
     pub fn request_window(&self) {
         self.window_visible.store(true, Ordering::Release);
         if let Some(wake) = self.ui_waker.lock().expect("UI waker").as_ref() {

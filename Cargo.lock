@@ -1506,7 +1506,7 @@ dependencies = [
 
 [[package]]
 name = "internet-uptime-monitor"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1514,6 +1514,7 @@ dependencies = [
  "eframe",
  "fs2",
  "image",
+ "raw-window-handle",
  "rfd",
  "rusqlite",
  "semver",

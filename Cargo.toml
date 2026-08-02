@@ -1,6 +1,6 @@
 [package]
 name = "internet-uptime-monitor"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 rust-version = "1.88"
 description = "A quiet, local internet outage monitor with clear evidence and reports"
@@ -23,6 +23,7 @@ tempfile = "3"
 ureq = { version = "=3.5.0", default-features = false, features = ["native-tls-no-default"] }
 
 [target.'cfg(windows)'.dependencies]
+raw-window-handle = "0.6"
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_NetworkManagement_IpHelper", "Win32_Networking_WinSock", "Win32_System_Console", "Win32_System_LibraryLoader", "Win32_System_Registry", "Win32_System_Threading", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "Win32_Graphics_Gdi"] }
 
 [build-dependencies]

@@ -16,7 +16,7 @@ use std::{
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const REPOSITORY: &str = "siarheisinelnikau/internet-uptime-monitor";
-const EXE: &str = "internet-uptime-monitor.exe";
+const LEGACY_EXE: &str = "internet-uptime-monitor.exe";
 const MAX_EXE: u64 = 100 * 1024 * 1024;
 const API: &str =
     "https://api.github.com/repos/siarheisinelnikau/internet-uptime-monitor/releases/latest";
@@ -70,6 +70,7 @@ struct Release {
     version: String,
     url: String,
     executable_url: String,
+    executable_name: String,
     checksum_url: String,
     size: u64,
     digest: Option<String>,
@@ -177,6 +178,7 @@ impl Updater {
                 let checksum = download(&release.checksum_url, 64 * 1024, 30)?;
                 let expected = parse_checksum(
                     std::str::from_utf8(&checksum).context("Invalid checksum file.")?,
+                    &release.executable_name,
                 )?;
                 if let Some(digest) = &release.digest {
                     ensure!(
@@ -314,10 +316,15 @@ fn parse_release(value: &serde_json::Value) -> Result<Release> {
         );
         Ok(matches[0])
     };
-    let exe = asset(EXE)?;
+    let executable_name = if version < Version::new(0, 2, 1) {
+        LEGACY_EXE.to_owned()
+    } else {
+        format!("InternetUptimeMonitor-v{version}.exe")
+    };
+    let exe = asset(&executable_name)?;
     let sums = asset("SHA256SUMS.txt")?;
     let prefix = format!("https://github.com/{REPOSITORY}/releases/download/{tag}/");
-    let executable_url = format!("{prefix}{EXE}");
+    let executable_url = format!("{prefix}{executable_name}");
     let checksum_url = format!("{prefix}SHA256SUMS.txt");
     ensure!(
         exe["browser_download_url"] == executable_url
@@ -341,6 +348,7 @@ fn parse_release(value: &serde_json::Value) -> Result<Release> {
         version: version.to_string(),
         url,
         executable_url,
+        executable_name,
         checksum_url,
         size,
         digest,
@@ -353,11 +361,11 @@ fn valid_hash(value: &str) -> Result<String> {
     );
     Ok(value.to_ascii_lowercase())
 }
-fn parse_checksum(text: &str) -> Result<String> {
+fn parse_checksum(text: &str, executable_name: &str) -> Result<String> {
     let mut found = None;
     for line in text.trim_start_matches('\u{feff}').lines() {
         let fields = line.split_whitespace().collect::<Vec<_>>();
-        if fields.len() == 2 && fields[1].trim_start_matches('*') == EXE {
+        if fields.len() == 2 && fields[1].trim_start_matches('*') == executable_name {
             ensure!(found.is_none(), "Duplicate executable checksum.");
             found = Some(valid_hash(fields[0])?);
         }
@@ -649,6 +657,7 @@ pub fn cleanup(data: &Path) {
 mod tests {
     use super::*;
     use serde_json::json;
+    const EXE: &str = "InternetUptimeMonitor-v0.2.1.exe";
     #[test]
     fn native_tls_explicitly_uses_the_platform_certificate_store() {
         assert!(matches!(
@@ -657,8 +666,8 @@ mod tests {
         ));
     }
     fn release() -> serde_json::Value {
-        let prefix = format!("https://github.com/{REPOSITORY}/releases/download/v0.2.0/");
-        json!({"tag_name":"v0.2.0","draft":false,"prerelease":false,"html_url":format!("https://github.com/{REPOSITORY}/releases/tag/v0.2.0"),"assets":[{"name":EXE,"size":2000,"browser_download_url":format!("{prefix}{EXE}")},{"name":"SHA256SUMS.txt","browser_download_url":format!("{prefix}SHA256SUMS.txt")}]})
+        let prefix = format!("https://github.com/{REPOSITORY}/releases/download/v0.2.1/");
+        json!({"tag_name":"v0.2.1","draft":false,"prerelease":false,"html_url":format!("https://github.com/{REPOSITORY}/releases/tag/v0.2.1"),"assets":[{"name":EXE,"size":2000,"browser_download_url":format!("{prefix}{EXE}")},{"name":"SHA256SUMS.txt","browser_download_url":format!("{prefix}SHA256SUMS.txt")}]})
     }
     #[test]
     fn compares_numeric_versions_and_never_downgrades() {
@@ -688,14 +697,33 @@ mod tests {
     #[test]
     fn checksums_are_exact_and_unambiguous() {
         let hash = "a".repeat(64);
-        assert_eq!(parse_checksum(&format!("{hash}  {EXE}\n")).unwrap(), hash);
         assert_eq!(
-            parse_checksum(&format!("\u{feff}{hash} *{EXE}\r\n")).unwrap(),
+            parse_checksum(&format!("{hash}  {EXE}\n"), EXE).unwrap(),
             hash
         );
-        assert!(parse_checksum(&format!("{hash} other.exe")).is_err());
-        assert!(parse_checksum(&format!("bad {EXE}")).is_err());
-        assert!(parse_checksum(&format!("{hash} {EXE}\n{hash} {EXE}")).is_err());
+        assert_eq!(
+            parse_checksum(&format!("\u{feff}{hash} *{EXE}\r\n"), EXE).unwrap(),
+            hash
+        );
+        assert!(parse_checksum(&format!("{hash} other.exe"), EXE).is_err());
+        assert!(parse_checksum(&format!("bad {EXE}"), EXE).is_err());
+        assert!(parse_checksum(&format!("{hash} {EXE}\n{hash} {EXE}"), EXE).is_err());
+        assert!(parse_checksum(&format!("{hash} {LEGACY_EXE}"), EXE).is_err());
+    }
+    #[test]
+    fn legacy_assets_are_accepted_only_for_historical_versions() {
+        let legacy = release()
+            .to_string()
+            .replace(EXE, LEGACY_EXE)
+            .replace("0.2.1", "0.2.0");
+        assert_eq!(
+            parse_release(&serde_json::from_str(&legacy).unwrap())
+                .unwrap()
+                .executable_name,
+            LEGACY_EXE
+        );
+        let wrong = release().to_string().replace(EXE, LEGACY_EXE);
+        assert!(parse_release(&serde_json::from_str(&wrong).unwrap()).is_err());
     }
     #[test]
     fn rejects_tampered_downloads_before_replacing_anything() {

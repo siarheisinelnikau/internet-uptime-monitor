@@ -13,14 +13,18 @@ subscription, or session limit. The interface and reports are in English.
 
 ## Run it
 
-Download `internet-uptime-monitor.exe` from
+Download `InternetUptimeMonitor-v0.2.1.exe` from
 [GitHub Releases](https://github.com/siarheisinelnikau/internet-uptime-monitor/releases/latest)
 and double-click it. Its native desktop window opens immediately.
 
 - Close the window to keep monitoring in the Windows notification area.
-- Double-click the EXE or tray icon to bring the existing window back.
+- Click the tray icon or double-click the EXE to bring the existing window back.
 - Right-click the tray icon to pause, resume, change automatic startup, or quit.
 - Use **Quit monitor** to stop recording.
+
+The tray icon accepts a single click or a double-click. **Open monitor** in its
+context menu and launching the EXE again restore the same window, including
+after a background start or minimization.
 
 Normal startup does not open a network listener or depend on a local port.
 Another application using port 8765 cannot prevent the native monitor from
@@ -55,13 +59,14 @@ target; the EXE is unsigned. Linux and macOS source builds are also tested.
 ### Updates
 
 Open **Settings → Application updates → Check for updates**. Choose
-**Update & restart** to install a newer stable release. Downloads must match the
+**Download and install** to install a newer stable release and restart. Downloads must match the
 release's `SHA256SUMS.txt` and GitHub asset digest when present. History, preferences,
 paused state, and portable data are preserved. Monitoring continues while the
 download runs; the restart interval stays unmonitored.
 
-Automatic checks run about 30 seconds after startup and once a day. Disable them
-in Settings if you prefer manual checks. Installation always requires your click.
+Automatic checks run about 30 seconds after startup and once a day, without
+blocking launch. Disable **Check for updates on startup** and save preferences
+if you prefer manual checks. Downloads and installation always require your click.
 The application folder must be writable. Completed staging files are cleaned up
 on startup. Checksums verify integrity; they are not code signing.
 
@@ -70,12 +75,20 @@ handshake on its existing port. This compatibility listener exits automatically;
 the native application does not use it for its interface or normal startup.
 Existing `--no-browser` and `--port` startup arguments remain accepted for migration.
 
+**Upgrading from 0.2.0 or earlier:** download and run the 0.2.1 EXE manually once.
+Those older updaters require the previous, unversioned asset name. Your existing
+history and settings are reused; portable users should place the new EXE beside
+their existing `data` folder. Version 0.2.1 supports versioned release assets for
+future in-app updates.
+
+![Native settings with monitoring preferences, startup update checks, installed version, and manual update controls](docs/screenshots/settings.png)
+
 ### Portable and background operation
 
 ```powershell
-.\internet-uptime-monitor.exe --portable
-.\internet-uptime-monitor.exe --background
-.\internet-uptime-monitor.exe --stop
+.\InternetUptimeMonitor-v0.2.1.exe --portable
+.\InternetUptimeMonitor-v0.2.1.exe --background
+.\InternetUptimeMonitor-v0.2.1.exe --stop
 ```
 
 Portable mode creates a `data` directory beside the EXE. Otherwise the Windows
@@ -85,8 +98,8 @@ naturally creates a database; single EXE describes the distributed application.
 Enable **Start quietly with Windows** in Settings or the tray menu, or use:
 
 ```powershell
-.\internet-uptime-monitor.exe --enable-startup
-.\internet-uptime-monitor.exe --disable-startup
+.\InternetUptimeMonitor-v0.2.1.exe --enable-startup
+.\InternetUptimeMonitor-v0.2.1.exe --disable-startup
 ```
 
 Startup is opt-in. Only the current user's `InternetUptimeMonitor` value in
@@ -189,8 +202,21 @@ cargo build --locked --release
 
 The native UI uses egui/eframe with the Glow renderer. Tests cover outage accounting,
 SQLite recovery, update integrity, native IPC, occupied ports, duplicate launches,
-and graceful shutdown. CI runs on Windows, Linux, and macOS. A `v*` tag matching
-the Cargo version publishes the Windows EXE and SHA-256 checksum.
+and graceful shutdown. CI runs on Windows, Linux, and macOS. Changing
+`docs/release-notes.md` on `main`, or pushing a matching `v*` tag, runs the Windows
+release workflow. It publishes `InternetUptimeMonitor-vVERSION.exe` and
+`SHA256SUMS.txt`, and refuses to overwrite a published version.
+
+On an interactive Windows desktop, also run the real-window regression:
+
+```powershell
+$env:UPTIME_GUI_EXE = (Resolve-Path .\dist\InternetUptimeMonitor-v0.2.1.exe)
+cargo test --locked --test tray_lifecycle -- --ignored --nocapture
+```
+
+This checks the actual HWND after tray callbacks, close-to-tray, background startup,
+minimization, and duplicate launches, plus continued recording and hidden shutdown.
+It complements a manual tray menu and foreground-focus check.
 
 | Path | Responsibility |
 | --- | --- |

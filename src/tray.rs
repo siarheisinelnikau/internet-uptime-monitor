@@ -38,7 +38,7 @@ mod windows {
                 }
                 if message == CALLBACK {
                     match lparam as u32 {
-                        WM_LBUTTONDBLCLK => {
+                        WM_LBUTTONUP | WM_LBUTTONDBLCLK => {
                             context.app.request_window();
                         }
                         WM_RBUTTONUP | WM_CONTEXTMENU => {
@@ -167,7 +167,7 @@ mod windows {
             if icon.hIcon.is_null() {
                 icon.hIcon = LoadIconW(ptr::null_mut(), IDI_APPLICATION);
             }
-            let tip = wide("Internet Uptime Monitor — double-click to open");
+            let tip = wide("Internet Uptime Monitor — click to open");
             icon.szTip[..tip.len()].copy_from_slice(&tip);
             let taskbar_created = RegisterWindowMessageW(wide("TaskbarCreated").as_ptr());
             let mut context = Box::new(Context {
