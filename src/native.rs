@@ -11,7 +11,9 @@ use crate::{
 };
 use anyhow::Result;
 use chrono::{Local, TimeZone};
-use eframe::egui::{self, Color32, RichText, Stroke, Vec2};
+#[cfg(not(windows))]
+use eframe::run_native;
+use egui::{Color32, RichText, Stroke, Vec2};
 use std::{
     path::PathBuf,
     sync::{Arc, atomic::Ordering, mpsc},
@@ -149,13 +151,13 @@ pub struct NativeApp {
     receiver: mpsc::Receiver<(u64, std::result::Result<Report, String>)>,
 }
 impl NativeApp {
-    fn new(
-        cc: &eframe::CreationContext<'_>,
+    pub(crate) fn new(
+        context: &egui::Context,
         app: Arc<App>,
         instance: Arc<Instance>,
         data: PathBuf,
     ) -> Self {
-        let mut style = (*cc.egui_ctx.style()).clone();
+        let mut style = (*context.style()).clone();
         style.visuals = egui::Visuals::light();
         style.visuals.panel_fill = Color32::from_rgb(247, 248, 245);
         style.visuals.override_text_color = Some(INK);
@@ -163,41 +165,9 @@ impl NativeApp {
         style.visuals.selection.stroke = Stroke::new(1.0_f32, INK);
         style.spacing.item_spacing = Vec2::new(12.0, 12.0);
         style.spacing.button_padding = Vec2::new(14.0, 9.0);
-        cc.egui_ctx.set_style(style);
-        let ctx = cc.egui_ctx.clone();
-        #[cfg(windows)]
-        let window = {
-            use raw_window_handle::{HasWindowHandle, RawWindowHandle};
-            match cc.window_handle().map(|handle| handle.as_raw()) {
-                Ok(RawWindowHandle::Win32(handle)) => Some(handle.hwnd.get()),
-                _ => None,
-            }
-        };
+        context.set_style(style);
+        let ctx = context.clone();
         app.set_ui_waker(Box::new(move |show| {
-            #[cfg(windows)]
-            if let Some(window) = window {
-                use windows_sys::Win32::UI::WindowsAndMessaging::*;
-                // A hidden winit window does not receive paint events, so queued egui
-                // visibility commands alone cannot restore it. Wake the actual HWND
-                // asynchronously: the tray/IPC thread must never wait on the UI thread.
-                unsafe {
-                    let window = window as windows_sys::Win32::Foundation::HWND;
-                    if show {
-                        ShowWindowAsync(
-                            window,
-                            if IsIconic(window) != 0 {
-                                SW_RESTORE
-                            } else {
-                                SW_SHOW
-                            },
-                        );
-                    } else if IsWindowVisible(window) == 0 || IsIconic(window) != 0 {
-                        // Closing needs a final UI pass too. Do not activate a hidden
-                        // window or steal focus while flushing its Close command.
-                        ShowWindowAsync(window, SW_SHOWNOACTIVATE);
-                    }
-                }
-            }
             if show {
                 ctx.send_viewport_cmd(egui::ViewportCommand::Visible(true));
                 ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(false));
@@ -233,7 +203,7 @@ impl NativeApp {
         if native.app.window_visible.load(Ordering::Acquire) {
             native.app.request_window();
         }
-        native.refresh(&cc.egui_ctx);
+        native.refresh(context);
         #[cfg(feature = "screenshots")]
         if std::env::var_os("UPTIME_SCREENSHOT_TO").is_some() {
             if let Ok((_, Ok(report))) = native.receiver.recv_timeout(Duration::from_secs(5)) {
@@ -932,11 +902,9 @@ fn outage_table(ui: &mut egui::Ui, report: &Report, cause: usize, limit: usize) 
             }
         });
 }
-impl eframe::App for NativeApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+impl NativeApp {
+    pub(crate) fn draw(&mut self, ctx: &egui::Context) {
         if !self.app.window_visible.load(Ordering::Acquire) {
-            // eframe shows the first rendered frame even with a hidden viewport.
-            // Keep the framework state aligned with background startup as well.
             ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
         }
         #[cfg(feature = "screenshots")]
@@ -1097,11 +1065,28 @@ impl eframe::App for NativeApp {
             });
         ctx.request_repaint_after(Duration::from_millis(750));
     }
-    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
-        self.app.stop();
+    pub(crate) fn shutdown(&mut self) {
         self.app.clear_ui_waker();
+        self.app.stop();
     }
 }
+
+#[cfg(not(windows))]
+impl eframe::App for NativeApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.draw(ctx);
+    }
+    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
+        self.shutdown();
+    }
+}
+
+#[cfg(windows)]
+pub fn run(app: Arc<App>, instance: Arc<Instance>, data: PathBuf, hidden: bool) -> Result<()> {
+    crate::event_loop::run(app, instance, data, hidden)
+}
+
+#[cfg(not(windows))]
 pub fn run(app: Arc<App>, instance: Arc<Instance>, data: PathBuf, hidden: bool) -> Result<()> {
     let hidden = hidden && !app.window_visible.load(Ordering::Acquire);
     let options = eframe::NativeOptions {
@@ -1112,10 +1097,10 @@ pub fn run(app: Arc<App>, instance: Arc<Instance>, data: PathBuf, hidden: bool) 
             .with_icon(icon()),
         ..Default::default()
     };
-    eframe::run_native(
+    run_native(
         "Internet Uptime Monitor",
         options,
-        Box::new(move |cc| Ok(Box::new(NativeApp::new(cc, app, instance, data)))),
+        Box::new(move |cc| Ok(Box::new(NativeApp::new(&cc.egui_ctx, app, instance, data)))),
     )
     .map_err(|e| anyhow::anyhow!("Could not create the native window: {e}"))
 }

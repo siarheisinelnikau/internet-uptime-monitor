@@ -13,7 +13,7 @@ subscription, or session limit. The interface and reports are in English.
 
 ## Run it
 
-Download `InternetUptimeMonitor-v0.2.1.exe` from
+Download `InternetUptimeMonitor-v0.2.2.exe` from
 [GitHub Releases](https://github.com/siarheisinelnikau/internet-uptime-monitor/releases/latest)
 and double-click it. Its native desktop window opens immediately.
 
@@ -75,7 +75,7 @@ handshake on its existing port. This compatibility listener exits automatically;
 the native application does not use it for its interface or normal startup.
 Existing `--no-browser` and `--port` startup arguments remain accepted for migration.
 
-**Upgrading from 0.2.0 or earlier:** download and run the 0.2.1 EXE manually once.
+**Upgrading from 0.2.0 or earlier:** download and run the latest EXE manually once.
 Those older updaters require the previous, unversioned asset name. Your existing
 history and settings are reused; portable users should place the new EXE beside
 their existing `data` folder. Version 0.2.1 supports versioned release assets for
@@ -86,9 +86,9 @@ future in-app updates.
 ### Portable and background operation
 
 ```powershell
-.\InternetUptimeMonitor-v0.2.1.exe --portable
-.\InternetUptimeMonitor-v0.2.1.exe --background
-.\InternetUptimeMonitor-v0.2.1.exe --stop
+.\InternetUptimeMonitor-v0.2.2.exe --portable
+.\InternetUptimeMonitor-v0.2.2.exe --background
+.\InternetUptimeMonitor-v0.2.2.exe --stop
 ```
 
 Portable mode creates a `data` directory beside the EXE. Otherwise the Windows
@@ -98,8 +98,8 @@ naturally creates a database; single EXE describes the distributed application.
 Enable **Start quietly with Windows** in Settings or the tray menu, or use:
 
 ```powershell
-.\InternetUptimeMonitor-v0.2.1.exe --enable-startup
-.\InternetUptimeMonitor-v0.2.1.exe --disable-startup
+.\InternetUptimeMonitor-v0.2.2.exe --enable-startup
+.\InternetUptimeMonitor-v0.2.2.exe --disable-startup
 ```
 
 Startup is opt-in. Only the current user's `InternetUptimeMonitor` value in
@@ -200,7 +200,8 @@ cargo test --locked
 cargo build --locked --release
 ```
 
-The native UI uses egui/eframe with the Glow renderer. Tests cover outage accounting,
+The Windows UI renders egui on the CPU and presents through GDI, without OpenGL
+or DirectX. Linux and macOS use egui/eframe with Glow. Tests cover outage accounting,
 SQLite recovery, update integrity, native IPC, occupied ports, duplicate launches,
 and graceful shutdown. CI runs on Windows, Linux, and macOS. Changing
 `docs/release-notes.md` on `main`, or pushing a matching `v*` tag, runs the Windows
@@ -210,17 +211,23 @@ release workflow. It publishes `InternetUptimeMonitor-vVERSION.exe` and
 On an interactive Windows desktop, also run the real-window regression:
 
 ```powershell
-$env:UPTIME_GUI_EXE = (Resolve-Path .\dist\InternetUptimeMonitor-v0.2.1.exe)
+$env:UPTIME_GUI_EXE = (Resolve-Path .\dist\InternetUptimeMonitor-v0.2.2.exe)
 cargo test --locked --test tray_lifecycle -- --ignored --nocapture
 ```
 
 This checks the actual HWND after tray callbacks, close-to-tray, background startup,
 minimization, and duplicate launches, plus continued recording and hidden shutdown.
+It also measures idle CPU with the window visible, hidden, and restored to catch
+event-loop busy polling.
 It complements a manual tray menu and foreground-focus check.
+
+Set `UPTIME_RENDER_TRACE` to a local `.jsonl` path before launching to record
+frame timings, including CPU rendering and GDI presentation. Tracing is off by default.
 
 | Path | Responsibility |
 | --- | --- |
 | `src/native.rs` | Native desktop interface and file exports |
+| `src/event_loop.rs` | Windows CPU rendering, GDI presentation, and repaint scheduling |
 | `src/instance.rs` | Single-instance activation and local commands |
 | `src/probes.rs` | ICMP and gateway discovery |
 | `src/monitor.rs` | Background checks and monitoring controls |
