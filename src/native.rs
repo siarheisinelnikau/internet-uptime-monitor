@@ -100,35 +100,10 @@ fn state_color(state: &str) -> Color32 {
     }
 }
 pub fn icon() -> egui::IconData {
-    let mut rgba = vec![0; 64 * 64 * 4];
-    let points = [
-        (12.0f32, 35.0f32),
-        (23.0, 35.0),
-        (29.0, 17.0),
-        (36.0, 48.0),
-        (43.0, 31.0),
-        (53.0, 31.0),
-    ];
-    for y in 0..64 {
-        for x in 0..64 {
-            let offset = (y * 64 + x) * 4;
-            let mut color = [32, 76, 64, 255];
-            let p = egui::pos2(x as f32, y as f32);
-            if points.windows(2).any(|s| {
-                let a = egui::pos2(s[0].0, s[0].1);
-                let b = egui::pos2(s[1].0, s[1].1);
-                let t = ((p - a).dot(b - a) / (b - a).length_sq()).clamp(0.0, 1.0);
-                p.distance(a + (b - a) * t) < 2.0
-            }) {
-                color = [194, 237, 184, 255];
-            }
-            rgba[offset..offset + 4].copy_from_slice(&color);
-        }
-    }
     egui::IconData {
-        rgba,
-        width: 64,
-        height: 64,
+        rgba: include_bytes!("../assets/app-128.rgba").to_vec(),
+        width: 128,
+        height: 128,
     }
 }
 
@@ -177,6 +152,10 @@ impl NativeApp {
             }
             ctx.request_repaint();
         }));
+        let ctx = context.clone();
+        app.set_ui_refresh_waker(move || ctx.request_repaint());
+        let ctx = context.clone();
+        app.updates.set_waker(move || ctx.request_repaint());
         let (sender, receiver) = mpsc::channel();
         let config = app.snapshot().config;
         let mut native = Self {
@@ -1063,10 +1042,10 @@ impl NativeApp {
                         }
                     });
             });
-        ctx.request_repaint_after(Duration::from_millis(750));
     }
     pub(crate) fn shutdown(&mut self) {
         self.app.clear_ui_waker();
+        self.app.updates.clear_waker();
         self.app.stop();
     }
 }

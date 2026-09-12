@@ -1542,13 +1542,11 @@ dependencies = [
  "image",
  "rfd",
  "rusqlite",
- "semver",
+ "rust-auto-updator",
  "serde",
  "serde_json",
- "sha2",
  "softbuffer",
  "tempfile",
- "ureq",
  "windows-sys 0.61.2",
  "winit",
  "winresource",
@@ -2596,6 +2594,18 @@ dependencies = [
  "hashlink",
  "libsqlite3-sys",
  "smallvec",
+]
+
+[[package]]
+name = "rust-auto-updator"
+version = "0.1.0"
+dependencies = [
+ "semver",
+ "serde",
+ "serde_json",
+ "sha2",
+ "ureq",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

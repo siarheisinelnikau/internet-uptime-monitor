@@ -50,6 +50,7 @@ struct Options {
     help: bool,
     version: bool,
     legacy_port: u16,
+    cleanup_update: Option<PathBuf>,
 }
 impl Options {
     fn parse() -> Result<Self> {
@@ -68,6 +69,7 @@ impl Options {
             help: false,
             version: false,
             legacy_port: 8765,
+            cleanup_update: None,
         };
         let mut args = std::env::args().skip(1);
         while let Some(arg) = args.next() {
@@ -90,6 +92,11 @@ impl Options {
                 }
                 "--data-dir" => {
                     options.data = PathBuf::from(args.next().context("--data-dir needs a path.")?)
+                }
+                "--cleanup-update" => {
+                    options.cleanup_update = Some(PathBuf::from(
+                        args.next().context("Missing cleanup folder.")?,
+                    ));
                 }
                 "--portable" => {
                     options.data = std::env::current_exe()?
@@ -117,9 +124,7 @@ impl Options {
 fn run() -> Result<i32> {
     let mut internal = std::env::args_os().skip(1);
     if internal.next().as_deref() == Some(std::ffi::OsStr::new("--apply-update")) {
-        updates::apply_update(&PathBuf::from(
-            internal.next().context("Missing update plan.")?,
-        ))?;
+        rust_auto_updator::apply_update(&updates::config()?).map_err(anyhow::Error::msg)?;
         return Ok(0);
     }
     let options = Options::parse()?;
@@ -206,13 +211,11 @@ fn run() -> Result<i32> {
         seed_demo(&mut store)?;
     }
     let app = App::new(store, options.demo)?;
-    updates::cleanup(&options.data);
+    *app.cleanup_update.lock().expect("update startup") = options.cleanup_update;
     let executable = std::env::current_exe()?.canonicalize()?;
     let legacy = instance::legacy_update_port(&options.data, &executable);
     app.updates.configure(updates::Runtime {
-        executable,
         data: options.data.clone(),
-        port: 0,
         no_tray: options.no_tray,
         headless: options.headless,
     });
@@ -253,6 +256,9 @@ fn run() -> Result<i32> {
     };
     let result = if options.headless {
         instance.ready()?;
+        if let Some(directory) = app.cleanup_update.lock().expect("update startup").take() {
+            updates::cleanup_after_update(directory);
+        }
         while !app.is_stopping() {
             std::thread::sleep(Duration::from_millis(100));
         }

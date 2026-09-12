@@ -15,8 +15,12 @@ use winit::{
     dpi::LogicalSize,
     event::WindowEvent,
     event_loop::{ActiveEventLoop, ControlFlow, EventLoop, OwnedDisplayHandle},
+    platform::windows::WindowAttributesExtWindows,
     window::{Icon, Window, WindowId},
 };
+
+#[path = "render_diagnostic.rs"]
+mod diagnostic;
 
 const FRAME_INTERVAL: Duration = Duration::from_micros(16_667);
 
@@ -47,11 +51,14 @@ struct SoftwareApp {
     last_frame: Option<Instant>,
     error: Option<anyhow::Error>,
     trace: Option<FrameTrace>,
+    diagnostic: Option<diagnostic::Diagnostic>,
+    counts: [u64; 3],
 }
 
 impl SoftwareApp {
     fn initialize(&mut self, event_loop: &ActiveEventLoop) -> Result<()> {
         let icon = crate::native::icon();
+        let icon = Icon::from_rgba(icon.rgba, icon.width, icon.height)?;
         let window = Arc::new(
             event_loop.create_window(
                 Window::default_attributes()
@@ -59,7 +66,8 @@ impl SoftwareApp {
                     .with_inner_size(LogicalSize::new(1160.0, 890.0))
                     .with_min_inner_size(LogicalSize::new(850.0, 620.0))
                     .with_visible(self.monitor.window_visible.load(Ordering::Acquire))
-                    .with_window_icon(Some(Icon::from_rgba(icon.rgba, icon.width, icon.height)?)),
+                    .with_window_icon(Some(icon.clone()))
+                    .with_taskbar_icon(Some(icon)),
             )?,
         );
         let context = softbuffer::Context::new(event_loop.owned_display_handle())
@@ -92,6 +100,9 @@ impl SoftwareApp {
             has_frame: false,
         });
         self.request_frame(Instant::now());
+        if !self.monitor.window_visible.load(Ordering::Acquire) {
+            self.monitor.acknowledge_update_startup();
+        }
         Ok(())
     }
 
@@ -111,12 +122,25 @@ impl SoftwareApp {
         let Some(state) = self.window.as_mut() else {
             return Ok(());
         };
+        if !self.monitor.window_visible.load(Ordering::Acquire) {
+            state.window.set_visible(false);
+            return Ok(());
+        }
+        // A requested show is handled independently of layout while hidden.
+        if self.monitor.take_show_request() || !state.window.is_visible().unwrap_or(true) {
+            state.window.set_visible(true);
+            state.window.set_minimized(false);
+        }
+        if state.window.is_minimized() == Some(true) {
+            return Ok(());
+        }
         egui_winit::update_viewport_info(&mut state.info, &self.context, &state.window, false);
         let mut input = state.input.take_egui_input(&state.window);
         input
             .viewports
             .insert(egui::ViewportId::ROOT, state.info.clone());
         state.info.events.clear();
+        self.counts[0] += 1;
         let mut output = self.context.run(input, |ctx| state.native.draw(ctx));
         // Keep font/image uploads from hidden frames until the next presentation.
         state.pending_textures.append(output.textures_delta);
@@ -175,6 +199,7 @@ impl SoftwareApp {
             .buffer_mut()
             .map_err(|e| anyhow::anyhow!("Could not access the GDI bitmap: {e}"))?;
         buffer.fill(0);
+        self.counts[1] += 1;
         state.renderer.render(
             &mut BufferMutRef::new(
                 bytemuck::cast_slice_mut(&mut buffer),
@@ -213,7 +238,9 @@ impl SoftwareApp {
         buffer
             .present()
             .map_err(|e| anyhow::anyhow!("Could not display the GDI bitmap: {e}"))?;
+        self.counts[2] += 1;
         state.has_frame = true;
+        self.monitor.acknowledge_update_startup();
         if let Some(trace) = &mut self.trace {
             trace.record(started.elapsed(), &self.context);
         }
@@ -249,6 +276,11 @@ impl ApplicationHandler<Repaint> for SoftwareApp {
             state.has_frame = false;
         }
         if matches!(event, WindowEvent::RedrawRequested) && state.has_frame {
+            if !state.window.is_visible().unwrap_or(true)
+                || state.window.is_minimized() == Some(true)
+            {
+                return;
+            }
             // An OS expose/paint event only needs the retained bitmap. Rebuilding
             // egui here would turn unrelated Windows paint traffic into UI frames.
             let result = state
@@ -261,6 +293,7 @@ impl ApplicationHandler<Repaint> for SoftwareApp {
                     anyhow::anyhow!("Could not restore the GDI bitmap: {error}"),
                 );
             }
+            self.counts[2] += 1;
             return;
         }
         if matches!(event, WindowEvent::CloseRequested) {
@@ -285,6 +318,31 @@ impl ApplicationHandler<Repaint> for SoftwareApp {
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        if let Some(diagnostic) = &mut self.diagnostic {
+            match diagnostic.poll(self.counts) {
+                diagnostic::Action::Hide => {
+                    if let Some(state) = &self.window {
+                        state.window.set_visible(false);
+                    }
+                    self.monitor.window_visible.store(false, Ordering::Release);
+                    self.next_frame = None;
+                }
+                diagnostic::Action::Show => {
+                    self.monitor.window_visible.store(true, Ordering::Release);
+                    if let Some(state) = &mut self.window {
+                        state.window.set_visible(true);
+                        state.window.set_minimized(false);
+                        state.has_frame = false;
+                    }
+                    self.request_frame(Instant::now());
+                }
+                diagnostic::Action::Exit => {
+                    event_loop.exit();
+                    return;
+                }
+                diagnostic::Action::None => {}
+            }
+        }
         if self.monitor.is_stopping() {
             event_loop.exit();
             return;
@@ -294,10 +352,16 @@ impl ApplicationHandler<Repaint> for SoftwareApp {
         {
             self.fail(event_loop, error);
         }
-        event_loop.set_control_flow(
-            self.next_frame
-                .map_or(ControlFlow::Wait, ControlFlow::WaitUntil),
-        );
+        let deadline = match (
+            self.next_frame,
+            self.diagnostic
+                .as_ref()
+                .map(|diagnostic| diagnostic.deadline()),
+        ) {
+            (Some(frame), Some(diagnostic)) => Some(frame.min(diagnostic)),
+            (frame, diagnostic) => frame.or(diagnostic),
+        };
+        event_loop.set_control_flow(deadline.map_or(ControlFlow::Wait, ControlFlow::WaitUntil));
     }
 
     fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
@@ -378,6 +442,8 @@ pub fn run(monitor: Arc<App>, instance: Arc<Instance>, data: PathBuf, _hidden: b
         last_frame: None,
         error: None,
         trace: FrameTrace::new(),
+        diagnostic: diagnostic::Diagnostic::from_env("UPTIME_RENDER_DIAGNOSTIC"),
+        counts: [0; 3],
     };
     event_loop.run_app(&mut app)?;
     if let Some(error) = app.error {

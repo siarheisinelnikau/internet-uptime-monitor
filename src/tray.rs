@@ -161,11 +161,19 @@ mod windows {
                 uID: 1,
                 uFlags: NIF_ICON | NIF_MESSAGE | NIF_TIP,
                 uCallbackMessage: CALLBACK,
-                hIcon: LoadIconW(instance, resource_id),
+                hIcon: LoadImageW(
+                    instance,
+                    resource_id,
+                    IMAGE_ICON,
+                    GetSystemMetrics(SM_CXSMICON),
+                    GetSystemMetrics(SM_CYSMICON),
+                    0,
+                ),
                 ..Default::default()
             };
             if icon.hIcon.is_null() {
-                icon.hIcon = LoadIconW(ptr::null_mut(), IDI_APPLICATION);
+                DestroyWindow(window);
+                bail!("Could not load the packaged tray icon.");
             }
             let tip = wide("Internet Uptime Monitor — click to open");
             icon.szTip[..tip.len()].copy_from_slice(&tip);
@@ -182,6 +190,7 @@ mod windows {
                 (&mut *context as *mut Context) as isize,
             );
             if Shell_NotifyIconW(NIM_ADD, &context.icon) == 0 {
+                DestroyIcon(context.icon.hIcon);
                 DestroyWindow(window);
                 bail!("Could not add the tray icon.");
             }
@@ -224,6 +233,7 @@ mod windows {
                 thread::sleep(Duration::from_millis(100));
             }
             Shell_NotifyIconW(NIM_DELETE, &context.icon);
+            DestroyIcon(context.icon.hIcon);
             app.tray_available
                 .store(false, std::sync::atomic::Ordering::Release);
             SetWindowLongPtrW(window, GWLP_USERDATA, 0);

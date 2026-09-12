@@ -193,6 +193,10 @@ in `startup-error.log` without a blocking system error popup.
 
 ## Development
 
+Requires Rust 1.95 or newer. Keep the `rust-auto-updator` workspace beside this
+repository. The path dependency is local; CI/source builds must provision that
+sibling workspace explicitly. No registry or remote package is assumed.
+
 ```powershell
 cargo fmt --check
 cargo clippy --locked --all-targets -- -D warnings
@@ -224,6 +228,19 @@ It complements a manual tray menu and foreground-focus check.
 Set `UPTIME_RENDER_TRACE` to a local `.jsonl` path before launching to record
 frame timings, including CPU rendering and GDI presentation. Tracing is off by default.
 
+For a finite diagnostic without external input or desktop capture, set
+`UPTIME_RENDER_DIAGNOSTIC` to an absolute JSON output path and launch an isolated
+`--demo --no-tray --data-dir PATH` instance. It measures settled visible idle,
+hides its own window, restores it and exits after 18 seconds. The report counts
+actual layout, CPU raster and GDI present calls and reports CPU as a percentage
+of one logical core. The hidden phase performs no window layout or rendering.
+This checks the renderer lifecycle; it does not test tray clicks or perceptual lag.
+
+Run `scripts/inspect-icons.ps1 -Executable PATH` to load and render packaged icon
+resources at native sizes without executing the target. The application, window,
+taskbar and tray use the same rounded waveform artwork. Tray loading follows the
+system small-icon metric, with native 16, 20, 24 and 32 pixel assets.
+
 | Path | Responsibility |
 | --- | --- |
 | `src/native.rs` | Native desktop interface and file exports |
@@ -234,7 +251,7 @@ frame timings, including CPU rendering and GDI presentation. Tracing is off by d
 | `src/storage.rs` | SQLite evidence and report calculations |
 | `src/reports.rs` | Plain-text and CSV report formatting |
 | `src/tray.rs` | Windows tray menu |
-| `src/updates.rs` | GitHub updates, verification, replacement, and recovery |
+| `src/updates.rs` | Product preferences, update status and monitor restart arguments; the shared `rust-auto-updator` owns discovery, verification and installation |
 
 Inspired by [Net Uptime Monitor](https://netuptimemonitor.com/details/). Independent
 and unaffiliated. Licensed under the [MIT License](LICENSE).

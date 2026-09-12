@@ -15,9 +15,12 @@ pub type UiWaker = Box<dyn Fn(bool) + Send + Sync>;
 pub struct App {
     pub tray_available: AtomicBool,
     pub window_visible: AtomicBool,
+    show_requested: AtomicBool,
     pub ui_notice: Mutex<Option<String>>,
     ui_waker: Mutex<Option<UiWaker>>,
+    ui_refresh_waker: Mutex<Option<Box<dyn Fn() + Send + Sync>>>,
     pub updates: Arc<crate::updates::Updater>,
+    pub cleanup_update: Mutex<Option<std::path::PathBuf>>,
     pub store: Mutex<Store>,
     pub status: Mutex<Status>,
     pub stopping: AtomicBool,
@@ -32,9 +35,12 @@ impl App {
         Ok(Arc::new(Self {
             tray_available: AtomicBool::new(false),
             window_visible: AtomicBool::new(true),
+            show_requested: AtomicBool::new(false),
             ui_notice: Mutex::new(None),
             ui_waker: Mutex::new(None),
+            ui_refresh_waker: Mutex::new(None),
             updates: Arc::new(crate::updates::Updater::default()),
+            cleanup_update: Mutex::new(None),
             store: Mutex::new(store),
             status: Mutex::new(Status {
                 paused: false,
@@ -65,6 +71,7 @@ impl App {
         status.generation += 1;
         status.latest = None;
         self.wake.notify_all();
+        self.refresh_ui();
         Ok(())
     }
     pub fn control(&self, action: &str) -> Result<()> {
@@ -81,6 +88,7 @@ impl App {
         status.generation += 1;
         status.latest = None;
         self.wake.notify_all();
+        self.refresh_ui();
         Ok(())
     }
     pub fn stop(&self) {
@@ -95,15 +103,41 @@ impl App {
     }
     pub fn clear_ui_waker(&self) {
         *self.ui_waker.lock().expect("UI waker") = None;
+        *self.ui_refresh_waker.lock().expect("UI refresh waker") = None;
+    }
+    pub fn set_ui_refresh_waker(&self, wake: impl Fn() + Send + Sync + 'static) {
+        *self.ui_refresh_waker.lock().expect("UI refresh waker") = Some(Box::new(wake));
+    }
+    fn refresh_ui(&self) {
+        if self.window_visible.load(Ordering::Acquire)
+            && let Some(wake) = self
+                .ui_refresh_waker
+                .lock()
+                .expect("UI refresh waker")
+                .as_ref()
+        {
+            wake();
+        }
     }
     pub fn request_window(&self) {
+        self.show_requested.store(true, Ordering::Release);
         self.window_visible.store(true, Ordering::Release);
         if let Some(wake) = self.ui_waker.lock().expect("UI waker").as_ref() {
             wake(true);
         }
     }
+    #[cfg(windows)]
+    pub(crate) fn take_show_request(&self) -> bool {
+        self.show_requested.swap(false, Ordering::AcqRel)
+    }
     pub fn is_stopping(&self) -> bool {
         self.stopping.load(Ordering::Acquire)
+    }
+    #[cfg(windows)]
+    pub(crate) fn acknowledge_update_startup(&self) {
+        if let Some(directory) = self.cleanup_update.lock().expect("update startup").take() {
+            crate::updates::cleanup_after_update(directory);
+        }
     }
     pub fn start(self: &Arc<Self>) -> Option<JoinHandle<()>> {
         if self.snapshot().demo {
@@ -158,6 +192,7 @@ impl App {
             }
             let wait = Duration::from_secs(status.config.interval_seconds as u64)
                 .saturating_sub(started.elapsed());
+            self.refresh_ui();
             let _ = self.wake.wait_timeout_while(current, wait, |s| {
                 s.generation == status.generation && !self.is_stopping()
             });
