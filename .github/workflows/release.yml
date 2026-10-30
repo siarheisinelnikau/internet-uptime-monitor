@@ -37,3 +37,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release edit ${{ github.ref_name }} --draft=false --latest
+      - name: Mark superseded initial build
+        if: github.ref_name == 'v0.1.1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit v0.1.0 --prerelease --latest=false --notes-file docs/v0.1.0-issue.md

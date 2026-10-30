@@ -1,6 +1,6 @@
 [package]
 name = "internet-uptime-monitor"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 rust-version = "1.88"
 description = "A quiet, local internet outage monitor with clear evidence and reports"

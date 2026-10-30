@@ -1,5 +1,7 @@
 Internet Uptime Monitor is a local Rust application that records when your connection fails and produces evidence you can share with your internet provider.
 
+Version 0.1.1 fixes GitHub update checks by explicitly using the operating system’s trusted certificate store. Use this version instead of 0.1.0.
+
 - Single Windows x64 EXE with an embedded dashboard, bundled SQLite, and static C runtime.
 - Independent router checks and multiple public internet targets, with outage start times, durations, and recovery evidence.
 - Daily, 7-day, and 30-day reports; readable text, CSV, and JSON exports.
