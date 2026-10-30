@@ -102,3 +102,16 @@ fn stop_uses_data_directory_ipc_instead_of_a_port() {
     }
     panic!("IPC shutdown did not complete");
 }
+#[test]
+fn stopping_an_inactive_directory_does_not_touch_another_instance() {
+    let mut running = Running::start(&[]);
+    let other = tempfile::tempdir().unwrap();
+    assert!(
+        command(other.path())
+            .arg("--stop")
+            .status()
+            .unwrap()
+            .success()
+    );
+    assert!(running.child.try_wait().unwrap().is_none());
+}

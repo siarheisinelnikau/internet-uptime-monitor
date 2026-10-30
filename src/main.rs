@@ -148,6 +148,7 @@ fn run() -> Result<i32> {
     }
     if options.stop {
         if !instance::send(&options.data, options.demo, "stop")?
+            && instance::is_locked(&options.data, options.demo)
             && platform::monitor_running(options.legacy_port)
         {
             platform::local_request(options.legacy_port, "POST", "/api/shutdown")?;
