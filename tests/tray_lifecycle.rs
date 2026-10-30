@@ -2,12 +2,15 @@
 #![cfg(windows)]
 use internet_uptime_monitor::instance;
 use std::{
+    os::windows::io::AsRawHandle,
     path::Path,
     process::{Child, Command},
     thread,
     time::{Duration, Instant},
 };
-use windows_sys::Win32::{Foundation::*, UI::WindowsAndMessaging::*};
+use windows_sys::Win32::{
+    Foundation::*, System::Threading::GetProcessTimes, UI::WindowsAndMessaging::*,
+};
 
 struct Running {
     child: Child,
@@ -78,6 +81,103 @@ fn executable() -> std::path::PathBuf {
     std::env::var_os("UPTIME_GUI_EXE")
         .map(Into::into)
         .unwrap_or_else(|| Path::new(env!("CARGO_BIN_EXE_internet-uptime-monitor")).into())
+}
+
+fn cpu_seconds(child: &Child) -> f64 {
+    unsafe {
+        let mut created: FILETIME = std::mem::zeroed();
+        let mut exited: FILETIME = std::mem::zeroed();
+        let mut kernel: FILETIME = std::mem::zeroed();
+        let mut user: FILETIME = std::mem::zeroed();
+        assert_ne!(
+            GetProcessTimes(
+                child.as_raw_handle(),
+                &mut created,
+                &mut exited,
+                &mut kernel,
+                &mut user,
+            ),
+            0
+        );
+        let ticks =
+            |time: FILETIME| ((time.dwHighDateTime as u64) << 32) | time.dwLowDateTime as u64;
+        (ticks(kernel) + ticks(user)) as f64 / 10_000_000.0
+    }
+}
+
+fn assert_idle_cpu(running: &Running, state: &str) {
+    thread::sleep(Duration::from_secs(2));
+    let before = cpu_seconds(&running.child);
+    let started = Instant::now();
+    thread::sleep(Duration::from_secs(4));
+    let percent = (cpu_seconds(&running.child) - before) / started.elapsed().as_secs_f64() * 100.0;
+    eprintln!("{state}: {percent:.2}% of one CPU core");
+    assert!(
+        percent < 25.0,
+        "Idle {state} window is busy polling: {percent:.2}% of one core"
+    );
+}
+
+#[test]
+#[ignore = "Requires an interactive Windows desktop; measures the packaged app's idle CPU"]
+fn idle_window_does_not_busy_poll_cpu() {
+    let data = tempfile::tempdir().unwrap();
+    {
+        let mut store =
+            internet_uptime_monitor::storage::Store::open(&data.path().join("history.sqlite3"))
+                .unwrap();
+        internet_uptime_monitor::monitor::seed_demo(&mut store).unwrap();
+        store
+            .save_config(&internet_uptime_monitor::model::Config {
+                check_updates_automatically: false,
+                ..Default::default()
+            })
+            .unwrap();
+    }
+    let child = Command::new(executable())
+        .arg("--data-dir")
+        .arg(data.path())
+        .arg("--start-paused")
+        .spawn()
+        .unwrap();
+    let running = Running { child, data };
+    let pid = running.child.id();
+    wait("native readiness", || {
+        instance::read(running.data.path(), false).is_some_and(|s| s.ready)
+    });
+    wait("visible window and tray", || {
+        let w = windows(pid);
+        !w.main.is_null() && !w.tray.is_null() && unsafe { IsWindowVisible(w.main) != 0 }
+    });
+    assert_idle_cpu(&running, "visible");
+    let w = windows(pid);
+    unsafe {
+        assert_ne!(PostMessageW(w.main, WM_CLOSE, 0, 0), 0);
+        wait("hidden window", || IsWindowVisible(w.main) == 0);
+    }
+    assert_idle_cpu(&running, "hidden");
+    assert!(instance::send(running.data.path(), false, "open").unwrap());
+    wait("restored window", || unsafe {
+        IsWindowVisible(w.main) != 0
+    });
+    assert_idle_cpu(&running, "restored");
+    // Exercise a populated Overview while pointer events continue to arrive.
+    let before = cpu_seconds(&running.child);
+    let started = Instant::now();
+    for step in 0..120 {
+        let x = 250 + step % 500;
+        let y = 200 + step % 300;
+        unsafe {
+            assert_ne!(PostMessageW(w.main, WM_MOUSEMOVE, 0, x | (y << 16)), 0);
+        }
+        thread::sleep(Duration::from_millis(16));
+    }
+    let percent = (cpu_seconds(&running.child) - before) / started.elapsed().as_secs_f64() * 100.0;
+    eprintln!("pointer movement: {percent:.2}% of one CPU core");
+    assert!(
+        percent < 50.0,
+        "Pointer movement saturates the UI thread: {percent:.2}%"
+    );
 }
 
 #[test]
