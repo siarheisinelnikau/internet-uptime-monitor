@@ -84,7 +84,7 @@ fn muted(ui: &mut egui::Ui, text: impl Into<String>) {
 fn card() -> egui::Frame {
     egui::Frame::new()
         .fill(Color32::WHITE)
-        .stroke(Stroke::new(1.0, LINE))
+        .stroke(Stroke::new(1.0_f32, LINE))
         .corner_radius(8)
         .inner_margin(18)
 }
@@ -160,7 +160,7 @@ impl NativeApp {
         style.visuals.panel_fill = Color32::from_rgb(247, 248, 245);
         style.visuals.override_text_color = Some(INK);
         style.visuals.selection.bg_fill = Color32::from_rgb(211, 232, 201);
-        style.visuals.selection.stroke = Stroke::new(1.0, INK);
+        style.visuals.selection.stroke = Stroke::new(1.0_f32, INK);
         style.spacing.item_spacing = Vec2::new(12.0, 12.0);
         style.spacing.button_padding = Vec2::new(14.0, 9.0);
         cc.egui_ctx.set_style(style);
@@ -583,7 +583,7 @@ impl NativeApp {
                     let y = rect.top() + i as f32 * rect.height() / 3.0;
                     painter.line_segment(
                         [egui::pos2(rect.left(), y), egui::pos2(rect.right(), y)],
-                        Stroke::new(1.0, LINE),
+                        Stroke::new(1.0_f32, LINE),
                     );
                 }
                 let mut previous = None;
@@ -599,7 +599,7 @@ impl NativeApp {
                         if let Some((bucket, last)) = previous
                             && point.bucket == bucket + 1
                         {
-                            painter.line_segment([last, position], Stroke::new(2.0, GREEN));
+                            painter.line_segment([last, position], Stroke::new(2.0_f32, GREEN));
                         }
                         painter.circle_filled(position, 1.6, GREEN);
                         previous = Some((point.bucket, position));
