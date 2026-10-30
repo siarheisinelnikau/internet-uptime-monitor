@@ -1,5 +1,5 @@
 //! GitHub releases are the sole update source. Installation is always user initiated.
-use crate::{model::now, monitor::App, platform};
+use crate::{model::now, monitor::App};
 use anyhow::{Context, Result, bail, ensure};
 use semver::Version;
 use serde::{Deserialize, Serialize};
@@ -63,6 +63,7 @@ pub struct Runtime {
     pub data: PathBuf,
     pub port: u16,
     pub no_tray: bool,
+    pub headless: bool,
 }
 #[derive(Clone, Debug)]
 struct Release {
@@ -189,7 +190,7 @@ impl Updater {
                 let helper = stage.path().join("helper.exe");
                 fs::copy(&runtime.executable, &helper)?;
                 let plan = UpdatePlan {
-                    protocol: 1,
+                    protocol: 2,
                     parent_pid: std::process::id(),
                     target: runtime.executable.clone(),
                     data: runtime.data.clone(),
@@ -198,6 +199,10 @@ impl Updater {
                     paused: app.snapshot().paused,
                     version: release.version,
                     sha256: expected,
+                    headless: runtime.headless,
+                    start_hidden: !app
+                        .window_visible
+                        .load(std::sync::atomic::Ordering::Acquire),
                 };
                 let manifest = stage.path().join("plan.json");
                 let mut file = File::create(&manifest)?;
@@ -430,6 +435,10 @@ pub struct UpdatePlan {
     pub paused: bool,
     pub version: String,
     pub sha256: String,
+    #[serde(default)]
+    pub headless: bool,
+    #[serde(default)]
+    pub start_hidden: bool,
 }
 #[derive(Serialize, Deserialize)]
 struct ValueResult {
@@ -451,8 +460,13 @@ fn launch(plan: &UpdatePlan) -> Result<Child> {
         .arg("--data-dir")
         .arg(&plan.data)
         .arg("--port")
-        .arg(plan.port.to_string())
-        .arg("--no-browser");
+        .arg(plan.port.to_string());
+    if plan.start_hidden {
+        command.arg("--background");
+    }
+    if plan.headless {
+        command.arg("--headless");
+    }
     if plan.no_tray {
         command.arg("--no-tray");
     }
@@ -496,7 +510,7 @@ pub fn apply_update(manifest: &Path) -> Result<()> {
     use fs2::FileExt;
     let plan: UpdatePlan = serde_json::from_slice(&fs::read(manifest)?)?;
     ensure!(
-        plan.protocol == 1 && plan.port > 0 && plan.parent_pid != std::process::id(),
+        matches!(plan.protocol, 1 | 2) && plan.parent_pid != std::process::id(),
         "Invalid update plan."
     );
     Version::parse(&plan.version)?;
@@ -565,8 +579,8 @@ pub fn apply_update(manifest: &Path) -> Result<()> {
                 if child.try_wait()?.is_some() {
                     bail!("The updated application exited during startup.");
                 }
-                if platform::local_request(plan.port, "GET", "/api/health")
-                    .is_ok_and(|v| v["version"] == plan.version && v["pid"] == child.id())
+                if crate::instance::read(&plan.data, false)
+                    .is_some_and(|v| v.ready && v.version == plan.version && v.pid == child.id())
                 {
                     return Ok(());
                 }
@@ -622,8 +636,11 @@ pub fn cleanup(data: &Path) {
                 .file_type()
                 .is_ok_and(|t| t.is_dir() && !t.is_symlink())
             && entry.path().join("completed").is_file()
+            && fs::remove_dir_all(entry.path()).is_err()
+            && entry.path().is_dir()
         {
-            let _ = fs::remove_dir_all(entry.path());
+            // A helper can still be running during restart; retain the retry marker.
+            let _ = fs::write(entry.path().join("completed"), b"1");
         }
     }
 }

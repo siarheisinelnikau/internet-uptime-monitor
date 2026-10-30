@@ -1,8 +1,10 @@
+pub mod instance;
 pub mod model;
 pub mod monitor;
+pub mod native;
 pub mod platform;
 pub mod probes;
-pub mod server;
+pub mod reports;
 pub mod storage;
 pub mod tray;
 pub mod updates;
