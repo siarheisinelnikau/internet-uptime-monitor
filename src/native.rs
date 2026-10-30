@@ -165,7 +165,39 @@ impl NativeApp {
         style.spacing.button_padding = Vec2::new(14.0, 9.0);
         cc.egui_ctx.set_style(style);
         let ctx = cc.egui_ctx.clone();
+        #[cfg(windows)]
+        let window = {
+            use raw_window_handle::{HasWindowHandle, RawWindowHandle};
+            match cc.window_handle().map(|handle| handle.as_raw()) {
+                Ok(RawWindowHandle::Win32(handle)) => Some(handle.hwnd.get()),
+                _ => None,
+            }
+        };
         app.set_ui_waker(Box::new(move |show| {
+            #[cfg(windows)]
+            if let Some(window) = window {
+                use windows_sys::Win32::UI::WindowsAndMessaging::*;
+                // A hidden winit window does not receive paint events, so queued egui
+                // visibility commands alone cannot restore it. Wake the actual HWND
+                // asynchronously: the tray/IPC thread must never wait on the UI thread.
+                unsafe {
+                    let window = window as windows_sys::Win32::Foundation::HWND;
+                    if show {
+                        ShowWindowAsync(
+                            window,
+                            if IsIconic(window) != 0 {
+                                SW_RESTORE
+                            } else {
+                                SW_SHOW
+                            },
+                        );
+                    } else if IsWindowVisible(window) == 0 || IsIconic(window) != 0 {
+                        // Closing needs a final UI pass too. Do not activate a hidden
+                        // window or steal focus while flushing its Close command.
+                        ShowWindowAsync(window, SW_SHOWNOACTIVATE);
+                    }
+                }
+            }
             if show {
                 ctx.send_viewport_cmd(egui::ViewportCommand::Visible(true));
                 ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(false));
@@ -750,7 +782,7 @@ impl NativeApp {
                 ui.label("Minimum outage length");ui.add(egui::DragValue::new(&mut self.config.minimum_outage_seconds).range(0..=300).suffix(" seconds"));ui.end_row();
                 ui.label("Router IPv4 address");ui.add(egui::TextEdit::singleline(&mut self.config.router).hint_text("Auto-detect").desired_width(180.0));ui.end_row();
             });ui.add_space(8.0);muted(ui,"Short interruptions affect availability even when excluded from outage counts.");
-            ui.checkbox(&mut self.config.check_updates_automatically,"Check GitHub for updates automatically");muted(ui,"Checks on startup and once a day. Installation is always your choice.");
+            ui.checkbox(&mut self.config.check_updates_automatically,"Check for updates on startup");muted(ui,"Also checks once a day. Downloads and installation are always your choice.");
             ui.add_space(12.0);ui.strong("Independent internet targets");let mut remove=None;
             for (i,target) in self.config.targets.iter_mut().enumerate() {ui.horizontal(|ui| {ui.add(egui::TextEdit::singleline(&mut target.name).desired_width(130.0));ui.add(egui::TextEdit::singleline(&mut target.address).desired_width(150.0));if ui.small_button("Remove").clicked() {remove=Some(i);}});}
             if let Some(i)=remove && self.config.targets.len()>2 {self.config.targets.remove(i);}
@@ -820,7 +852,7 @@ impl NativeApp {
                 if update.phase == "available"
                     && update.install_supported
                     && !self.app.snapshot().demo
-                    && ui.button("Update & restart").clicked()
+                    && ui.button("Download and install").clicked()
                     && let Err(error) = self.app.updates.install(&self.app)
                 {
                     self.notice = Some(error.to_string());
@@ -902,6 +934,11 @@ fn outage_table(ui: &mut egui::Ui, report: &Report, cause: usize, limit: usize) 
 }
 impl eframe::App for NativeApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if !self.app.window_visible.load(Ordering::Acquire) {
+            // eframe shows the first rendered frame even with a hidden viewport.
+            // Keep the framework state aligned with background startup as well.
+            ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
+        }
         #[cfg(feature = "screenshots")]
         if let Some(path) = std::env::var_os("UPTIME_SCREENSHOT_TO") {
             let captured = ctx.input(|input| {
@@ -1062,6 +1099,7 @@ impl eframe::App for NativeApp {
     }
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         self.app.stop();
+        self.app.clear_ui_waker();
     }
 }
 pub fn run(app: Arc<App>, instance: Arc<Instance>, data: PathBuf, hidden: bool) -> Result<()> {

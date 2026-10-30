@@ -32,8 +32,8 @@ Options:
   --help             Show help
   --version          Show the installed version
 
-Close the window to keep monitoring in the tray. Double-click the EXE or tray
-icon to open it again. Use Quit monitor to stop recording.";
+Close the window to keep monitoring in the tray. Click the tray icon or
+double-click the EXE to open it again. Use Quit monitor to stop recording.";
 
 struct Options {
     data: PathBuf,
