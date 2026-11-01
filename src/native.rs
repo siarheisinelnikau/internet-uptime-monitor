@@ -49,14 +49,14 @@ fn apply_theme(context: &egui::Context, theme: Theme) {
         visuals.override_text_color = Some(Color32::from_rgb(229, 237, 226));
         visuals.weak_text_color = Some(Color32::from_rgb(163, 181, 165));
         visuals.selection.bg_fill = Color32::from_rgb(67, 103, 61);
-        visuals.selection.stroke = Stroke::new(1.0, Color32::WHITE);
+        visuals.selection.stroke = Stroke::new(1.0_f32, Color32::WHITE);
     } else {
         visuals.panel_fill = Color32::from_rgb(247, 248, 245);
         visuals.window_fill = Color32::WHITE;
         visuals.override_text_color = Some(INK);
         visuals.weak_text_color = Some(Color32::from_rgb(91, 112, 99));
         visuals.selection.bg_fill = Color32::from_rgb(211, 232, 201);
-        visuals.selection.stroke = Stroke::new(1.0, INK);
+        visuals.selection.stroke = Stroke::new(1.0_f32, INK);
     }
     context.set_visuals(visuals);
 }
@@ -995,7 +995,7 @@ impl NativeApp {
             ui.heading(t("Application updates"));
             muted(
                 ui,
-                translate_message(language, "Installed version {} · native desktop", &[(update.current_version).to_string()]),
+                translate_message(language, "Installed version {} · native desktop", std::slice::from_ref(&update.current_version)),
             );
             ui.add_space(10.0);
             let message = match update.phase.as_str() {
@@ -1182,7 +1182,7 @@ impl NativeApp {
                         self.notice = Some(translate_message(
                             language,
                             "Could not load history: {}",
-                            &[(error).to_string()],
+                            std::slice::from_ref(&error),
                         ))
                     }
                 }

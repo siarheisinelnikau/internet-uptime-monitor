@@ -17,6 +17,8 @@ Internet Uptime Monitor 0.3.0 adds six interface languages and a persistent dark
 
 Formatting, all-feature Clippy with warnings denied, 31 standard tests, and optimized Windows builds passed locally. Four application-generated client-area screenshots were inspected in English/light, Russian/dark, and German/dark. Packaged icon resources were loaded and checked at 16–256 pixels.
 
+Validation was repeated on Windows with Rust 1.99.1: strict all-target, all-feature Clippy and all 31 standard tests passed after resolving the newer compiler's type-inference and borrowed-slice diagnostics.
+
 Finite diagnostics confirmed zero layout, raster, and presentation calls while hidden over six-second samples. Visible samples received external pointer/focus events, so they are not a clean idle benchmark. Manual tray menus, keyboard traversal, and a clean visible-idle sample remain unverified for this version; the two interactive regression tests were left opt-in.
 
 ## Download and upgrade
