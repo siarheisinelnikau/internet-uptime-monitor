@@ -42,16 +42,19 @@ fn apply_theme(context: &egui::Context, theme: Theme) {
     } else {
         egui::Visuals::light()
     };
+    visuals.disabled_alpha = 0.7;
     if theme == Theme::Dark {
         visuals.panel_fill = Color32::from_rgb(22, 29, 25);
         visuals.window_fill = Color32::from_rgb(30, 41, 34);
         visuals.override_text_color = Some(Color32::from_rgb(229, 237, 226));
+        visuals.weak_text_color = Some(Color32::from_rgb(163, 181, 165));
         visuals.selection.bg_fill = Color32::from_rgb(67, 103, 61);
         visuals.selection.stroke = Stroke::new(1.0, Color32::WHITE);
     } else {
         visuals.panel_fill = Color32::from_rgb(247, 248, 245);
         visuals.window_fill = Color32::WHITE;
         visuals.override_text_color = Some(INK);
+        visuals.weak_text_color = Some(Color32::from_rgb(91, 112, 99));
         visuals.selection.bg_fill = Color32::from_rgb(211, 232, 201);
         visuals.selection.stroke = Stroke::new(1.0, INK);
     }

@@ -83,7 +83,7 @@ Check interval|Интервал проверки|Intervalle de vérification|Pr�
  seconds| секунд| secondes| Sekunden| segundos| secondi
 Response timeout|Время ожидания ответа|Délai de réponse|Antwortzeitlimit|Tiempo de espera|Tempo di attesa risposta
 Router IPv4 address|IPv4-адрес роутера|Adresse IPv4 du routeur|IPv4-Adresse des Routers|Dirección IPv4 del router|Indirizzo IPv4 del router
-Auto-detect|Определить автоматически|Détection automatique|Automatisch erkennen|Detectar automáticamente|Rileva automaticamente
+Auto-detect|Автоматически|Automatique|Automatisch|Automático|Automatico
 Short interruptions affect availability even when excluded from outage counts.|Короткие отключения влияют на доступность, даже если не входят в число отключений.|Les coupures courtes affectent la disponibilité même si elles ne sont pas comptabilisées.|Kurze Unterbrechungen beeinflussen die Verfügbarkeit, auch wenn sie nicht als Ausfall zählen.|Los cortes breves afectan a la disponibilidad aunque no se cuenten como cortes.|Le interruzioni brevi incidono sulla disponibilità anche quando non sono conteggiate.
 Check for updates on startup|Проверять обновления при запуске|Vérifier les mises à jour au démarrage|Beim Start nach Updates suchen|Buscar actualizaciones al iniciar|Cerca aggiornamenti all’avvio
 Also checks once a day. Downloads and installation are always your choice.|Также проверяет раз в день. Загрузка и установка — только по вашему решению.|Vérifie aussi une fois par jour. Le téléchargement et l’installation restent votre choix.|Prüft auch einmal täglich. Sie entscheiden über Download und Installation.|También comprueba una vez al día. Tú decides si descargar e instalar.|Controlla anche una volta al giorno. Download e installazione restano una tua scelta.

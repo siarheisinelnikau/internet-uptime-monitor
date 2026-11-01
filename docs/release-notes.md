@@ -13,6 +13,12 @@ Internet Uptime Monitor 0.3.0 adds six interface languages and a persistent dark
 - Local timestamps use an unambiguous numeric format. Addresses, target names, and technical OS/network details keep their original values.
 - Embedded catalogs validate all translations and interpolation placeholders. Focused regressions cover preference migration, saved appearance without a monitoring reset, and translated readable reports.
 
+## Validation
+
+Formatting, all-feature Clippy with warnings denied, 31 standard tests, and optimized Windows builds passed locally. Four application-generated client-area screenshots were inspected in English/light, Russian/dark, and German/dark. Packaged icon resources were loaded and checked at 16–256 pixels.
+
+Finite diagnostics confirmed zero layout, raster, and presentation calls while hidden over six-second samples. Visible samples received external pointer/focus events, so they are not a clean idle benchmark. Manual tray menus, keyboard traversal, and a clean visible-idle sample remain unverified for this version; the two interactive regression tests were left opt-in.
+
 ## Download and upgrade
 
 Download **InternetUptimeMonitor-v0.3.0.exe** for Windows 10/11 x64. This is one unsigned portable executable; no installer or browser runtime is required. **SHA256SUMS.txt** contains its SHA-256 checksum.

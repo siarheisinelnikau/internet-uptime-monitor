@@ -103,6 +103,9 @@ impl SoftwareApp {
             pending_textures: Default::default(),
             has_frame: false,
         });
+        if let Some(trace) = &mut self.trace {
+            trace.wake("initialize", Duration::ZERO);
+        }
         self.request_frame(Instant::now());
         if !self.monitor.window_visible.load(Ordering::Acquire) {
             self.monitor.acknowledge_update_startup();
@@ -156,6 +159,9 @@ impl SoftwareApp {
         let mut screenshots = Vec::new();
         if let Some(viewport) = output.viewport_output.get_mut(&egui::ViewportId::ROOT) {
             if viewport.repaint_delay != Duration::MAX {
+                if let Some(trace) = &mut self.trace {
+                    trace.wake("egui_deadline", viewport.repaint_delay);
+                }
                 self.next_frame = started.checked_add(viewport.repaint_delay.max(FRAME_INTERVAL));
             }
             for command in viewport.commands.drain(..) {
@@ -310,6 +316,24 @@ impl ApplicationHandler<Repaint> for SoftwareApp {
                 WindowEvent::RedrawRequested | WindowEvent::CloseRequested
             )
         {
+            if let Some(trace) = &mut self.trace {
+                let cause = match event {
+                    WindowEvent::Focused(_) => "window_focus",
+                    WindowEvent::Occluded(_) => "window_occlusion",
+                    WindowEvent::Resized(_) => "window_resize",
+                    WindowEvent::ScaleFactorChanged { .. } => "window_scale",
+                    WindowEvent::CursorMoved { .. } => "pointer_move",
+                    WindowEvent::CursorEntered { .. } | WindowEvent::CursorLeft { .. } => {
+                        "pointer_boundary"
+                    }
+                    WindowEvent::MouseInput { .. }
+                    | WindowEvent::MouseWheel { .. }
+                    | WindowEvent::KeyboardInput { .. } => "input",
+                    WindowEvent::RedrawRequested => "window_redraw",
+                    _ => "window_event",
+                };
+                trace.wake(cause, Duration::ZERO);
+            }
             self.request_frame(Instant::now());
         }
     }
@@ -317,6 +341,12 @@ impl ApplicationHandler<Repaint> for SoftwareApp {
     fn user_event(&mut self, _event_loop: &ActiveEventLoop, repaint: Repaint) {
         let pass = self.context.cumulative_pass_nr();
         if pass == repaint.pass || pass == repaint.pass + 1 {
+            if let Some(trace) = &mut self.trace {
+                trace.wake(
+                    "egui_repaint",
+                    repaint.when.saturating_duration_since(Instant::now()),
+                );
+            }
             self.request_frame(repaint.when);
         }
     }
@@ -332,6 +362,9 @@ impl ApplicationHandler<Repaint> for SoftwareApp {
                     self.next_frame = None;
                 }
                 diagnostic::Action::Show => {
+                    if let Some(trace) = &mut self.trace {
+                        trace.wake("diagnostic_restore", Duration::ZERO);
+                    }
                     self.monitor.window_visible.store(true, Ordering::Release);
                     if let Some(state) = &mut self.window {
                         state.window.set_visible(true);
@@ -380,6 +413,7 @@ struct FrameTrace {
     file: File,
     started: Instant,
     frames_ms: Vec<f64>,
+    wakeups: Vec<(f64, &'static str, f64)>,
 }
 
 impl FrameTrace {
@@ -399,7 +433,18 @@ impl FrameTrace {
             file,
             started: Instant::now(),
             frames_ms: Vec::new(),
+            wakeups: Vec::new(),
         })
+    }
+    fn wake(&mut self, cause: &'static str, delay: Duration) {
+        // Bounded metadata only: no raw input or user data, no per-event file writes.
+        if self.wakeups.len() < 256 {
+            self.wakeups.push((
+                self.started.elapsed().as_secs_f64(),
+                cause,
+                delay.as_secs_f64(),
+            ));
+        }
     }
     fn record(&mut self, elapsed: Duration, context: &egui::Context) {
         self.frames_ms.push(elapsed.as_secs_f64() * 1000.0);
@@ -416,11 +461,13 @@ impl FrameTrace {
                 "frame_median_ms": self.frames_ms[count / 2],
                 "frame_p95_ms": self.frames_ms[(count - 1) * 95 / 100],
                 "frame_max_ms": self.frames_ms[count - 1],
+                "wakeups_seconds_cause_delay": self.wakeups,
             "repaint_causes": context.repaint_causes().iter().map(ToString::to_string).collect::<Vec<_>>(),
             })
         );
         self.started = Instant::now();
         self.frames_ms.clear();
+        self.wakeups.clear();
     }
 }
 

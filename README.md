@@ -72,6 +72,8 @@ addresses, user-entered target names, and CSV/JSON keys retain their original da
 Times in the interface use the local timezone in an unambiguous numeric format;
 exports use UTC.
 
+![Dark theme with the Russian interface and labeled demo connection data](docs/screenshots/overview-ru-dark.png)
+
 ### Updates
 
 Open **Settings → Application updates → Check for updates**. Choose
@@ -97,7 +99,18 @@ history and settings are reused; portable users should place the new EXE beside
 their existing `data` folder. Version 0.2.1 supports versioned release assets for
 future in-app updates.
 
-![Native settings with monitoring preferences, startup update checks, installed version, and manual update controls](docs/screenshots/settings.png)
+![Light settings with language, theme, monitoring preferences, installed version, and update controls](docs/screenshots/settings.png)
+
+<details>
+<summary>Dark settings in German</summary>
+
+![Dark settings in German with the saved language and theme controls](docs/screenshots/settings-de-dark.png)
+
+</details>
+
+These are application-generated client-area screenshots at 1160 × 890 with
+labeled demo data, using the Windows CPU/GDI renderer. OS menus and window
+chrome are outside the captured surface.
 
 ### Portable and background operation
 
@@ -261,7 +274,10 @@ environment variables before ordinary launches. This does not establish OS menu,
 tray interaction, keyboard traversal, or normal idle/hidden performance.
 
 Set `UPTIME_RENDER_TRACE` to a local `.jsonl` path before launching to record
-frame timings, including CPU rendering and GDI presentation. Tracing is off by default.
+frame timings, including CPU rendering and GDI presentation. Tracing also records
+bounded wakeup-cause tags and requested delays, making native input/focus events
+distinguishable from egui repaint deadlines. It never records raw input or user data
+and is off by default.
 
 For a finite diagnostic without external input or desktop capture, set
 `UPTIME_RENDER_DIAGNOSTIC` to an absolute JSON output path and launch an isolated
@@ -270,6 +286,8 @@ hides its own window, restores it and exits after 18 seconds. The report counts
 actual layout, CPU raster and GDI present calls and reports CPU as a percentage
 of one logical core. The hidden phase performs no window layout or rendering.
 This checks the renderer lifecycle; it does not test tray clicks or perceptual lag.
+Incoming OS input can contaminate a sample labeled `visible_idle`; inspect the
+trace before interpreting it as settled idle.
 
 Run `scripts/inspect-icons.ps1 -Executable PATH` to load and render packaged icon
 resources at native sizes without executing the target. The application, window,
