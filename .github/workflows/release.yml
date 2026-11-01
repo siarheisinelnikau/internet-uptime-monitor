@@ -11,6 +11,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   release:
+    if: github.ref_type == 'tag' || (github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'Release localization v'))
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,6 +28,11 @@ jobs:
         run: |
           $version = ((Get-Content Cargo.toml | Select-String '^version = "(.+)"$' | Select-Object -First 1).Matches.Groups[1].Value)
           $tag = "v$version"
+          if ($env:GITHUB_REF_TYPE -ne 'tag') {
+            $event = Get-Content -LiteralPath $env:GITHUB_EVENT_PATH -Raw | ConvertFrom-Json
+            $subject = ($event.head_commit.message -split "`n")[0].TrimEnd("`r")
+            if ($subject -cne "Release localization $tag") { throw 'An exact final release subject matching the Cargo version is required.' }
+          }
           if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne $tag) { throw 'Release tag must match the Cargo package version.' }
           "tag=$tag" >> $env:GITHUB_OUTPUT
           "exe=InternetUptimeMonitor-$tag.exe" >> $env:GITHUB_OUTPUT
@@ -37,8 +43,14 @@ jobs:
         with:
           script: |
             try {
+              const {data: reference} = await github.rest.git.getRef({...context.repo, ref: `tags/${process.env.RELEASE_TAG}`});
+              if (reference.object.type !== 'commit' || reference.object.sha !== context.sha) {
+                throw new Error('An existing version tag belongs to another commit.');
+              }
+            } catch (error) { if (error.status !== 404) throw error; }
+            try {
               const {data: release} = await github.rest.repos.getReleaseByTag({...context.repo, tag: process.env.RELEASE_TAG});
-              if (!release.draft) core.setFailed('This version is already published. Bump the version instead of modifying it.');
+              if (!release.draft || release.target_commitish !== context.sha) core.setFailed('This release is published or belongs to another commit. Bump the version instead of replacing it.');
             } catch (error) { if (error.status !== 404) throw error; }
       - run: cargo fmt --check
       - run: cargo clippy --locked --all-targets -- -D warnings
