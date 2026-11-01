@@ -1,5 +1,6 @@
 #[cfg(windows)]
 mod event_loop;
+pub mod i18n;
 pub mod instance;
 pub mod model;
 pub mod monitor;

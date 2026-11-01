@@ -2,6 +2,7 @@
 #[cfg(windows)]
 use crate::platform;
 use crate::{
+    i18n::{Language, Theme, diagnostic, message as translate_message, tr},
     instance::Instance,
     model::{Config, State, now},
     monitor::App,
@@ -21,11 +22,51 @@ use std::{
 };
 
 const INK: Color32 = Color32::from_rgb(32, 67, 53);
-const MUTED: Color32 = Color32::from_rgb(112, 128, 113);
 const GREEN: Color32 = Color32::from_rgb(133, 176, 110);
 const ORANGE: Color32 = Color32::from_rgb(223, 157, 105);
 const RED: Color32 = Color32::from_rgb(190, 106, 102);
 const LINE: Color32 = Color32::from_rgb(226, 233, 221);
+
+fn apply_theme(context: &egui::Context, theme: Theme) {
+    context.set_theme(if theme == Theme::Dark {
+        egui::ThemePreference::Dark
+    } else {
+        egui::ThemePreference::Light
+    });
+    let mut visuals = if theme == Theme::Dark {
+        egui::Visuals::dark()
+    } else {
+        egui::Visuals::light()
+    };
+    if theme == Theme::Dark {
+        visuals.panel_fill = Color32::from_rgb(22, 29, 25);
+        visuals.window_fill = Color32::from_rgb(30, 41, 34);
+        visuals.override_text_color = Some(Color32::from_rgb(229, 237, 226));
+        visuals.selection.bg_fill = Color32::from_rgb(67, 103, 61);
+        visuals.selection.stroke = Stroke::new(1.0, Color32::WHITE);
+    } else {
+        visuals.panel_fill = Color32::from_rgb(247, 248, 245);
+        visuals.window_fill = Color32::WHITE;
+        visuals.override_text_color = Some(INK);
+        visuals.selection.bg_fill = Color32::from_rgb(211, 232, 201);
+        visuals.selection.stroke = Stroke::new(1.0, INK);
+    }
+    context.set_visuals(visuals);
+}
+
+fn state_label(language: Language, state: &str) -> &'static str {
+    tr(
+        language,
+        match state {
+            "online" => "Online",
+            "upstream" => "Internet issue",
+            "local" => "Local network",
+            "unknown" => "Unknown",
+            "unmonitored" => "Unmonitored",
+            _ => "Undetermined",
+        },
+    )
+}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum View {
@@ -41,11 +82,12 @@ enum Period {
     Month,
 }
 impl Period {
-    fn label(self) -> &'static str {
+    fn label(self, language: Language) -> &'static str {
+        let t = |key| tr(language, key);
         match self {
-            Self::Today => "Today",
-            Self::Week => "Last 7 days",
-            Self::Month => "Last 30 days",
+            Self::Today => t("Today"),
+            Self::Week => t("Last 7 days"),
+            Self::Month => t("Last 30 days"),
         }
     }
     fn range(self) -> (f64, f64) {
@@ -63,30 +105,48 @@ impl Period {
         (start, end.max(start + 0.001))
     }
 }
-fn duration(seconds: f64) -> String {
+fn duration(seconds: f64, language: Language) -> String {
     let seconds = seconds.max(0.0).round() as u64;
     if seconds < 60 {
-        format!("{seconds}s")
+        translate_message(language, "{}s", &[seconds.to_string()])
     } else if seconds < 3600 {
-        format!("{}m {}s", seconds / 60, seconds % 60)
+        translate_message(
+            language,
+            "{}m {}s",
+            &[(seconds / 60).to_string(), (seconds % 60).to_string()],
+        )
     } else {
-        format!("{}h {}m", seconds / 3600, seconds % 3600 / 60)
+        translate_message(
+            language,
+            "{}h {}m",
+            &[
+                (seconds / 3600).to_string(),
+                (seconds % 3600 / 60).to_string(),
+            ],
+        )
     }
 }
 fn timestamp(seconds: f64) -> String {
     Local
         .timestamp_opt(seconds as i64, 0)
         .single()
-        .map(|t| t.format("%d %b %H:%M:%S").to_string())
+        .map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string())
         .unwrap_or_default()
 }
 fn muted(ui: &mut egui::Ui, text: impl Into<String>) {
-    ui.label(RichText::new(text.into()).size(12.0).color(MUTED));
+    ui.label(
+        RichText::new(text.into())
+            .size(12.0)
+            .color(ui.visuals().weak_text_color()),
+    );
 }
-fn card() -> egui::Frame {
+fn card(ui: &egui::Ui) -> egui::Frame {
     egui::Frame::new()
-        .fill(Color32::WHITE)
-        .stroke(Stroke::new(1.0_f32, LINE))
+        .fill(ui.visuals().window_fill)
+        .stroke(Stroke::new(
+            1.0_f32,
+            ui.visuals().widgets.noninteractive.bg_stroke.color,
+        ))
         .corner_radius(8)
         .inner_margin(18)
 }
@@ -132,12 +192,10 @@ impl NativeApp {
         instance: Arc<Instance>,
         data: PathBuf,
     ) -> Self {
+        let config = app.snapshot().config;
+        let language = config.language;
+        apply_theme(context, config.theme);
         let mut style = (*context.style()).clone();
-        style.visuals = egui::Visuals::light();
-        style.visuals.panel_fill = Color32::from_rgb(247, 248, 245);
-        style.visuals.override_text_color = Some(INK);
-        style.visuals.selection.bg_fill = Color32::from_rgb(211, 232, 201);
-        style.visuals.selection.stroke = Stroke::new(1.0_f32, INK);
         style.spacing.item_spacing = Vec2::new(12.0, 12.0);
         style.spacing.button_padding = Vec2::new(14.0, 9.0);
         context.set_style(style);
@@ -157,7 +215,6 @@ impl NativeApp {
         let ctx = context.clone();
         app.updates.set_waker(move || ctx.request_repaint());
         let (sender, receiver) = mpsc::channel();
-        let config = app.snapshot().config;
         let mut native = Self {
             #[cfg(feature = "screenshots")]
             frames: 0,
@@ -177,7 +234,11 @@ impl NativeApp {
             receiver,
         };
         if let Err(error) = native.instance.ready() {
-            native.notice = Some(format!("Could not publish application readiness: {error}"));
+            native.notice = Some(translate_message(
+                language,
+                "Could not publish application readiness: {}",
+                &[(error).to_string()],
+            ));
         }
         if native.app.window_visible.load(Ordering::Acquire) {
             native.app.request_window();
@@ -222,6 +283,8 @@ impl NativeApp {
         });
     }
     fn export(&mut self, format: &str) {
+        let language = self.config.language;
+        let t = |key| tr(language, key);
         let (start, end) = self.period.range();
         let minimum = self.app.snapshot().config.minimum_outage_seconds;
         let result = (|| -> Result<()> {
@@ -239,11 +302,11 @@ impl NativeApp {
                     value["demo"] = demo.into();
                     serde_json::to_vec_pretty(&value)?
                 }
-                _ => reports::text_report(&report, demo).into_bytes(),
+                _ => reports::text_report_localized(&report, demo, language).into_bytes(),
             };
             if let Some(path) = rfd::FileDialog::new()
-                .set_title("Save connection report")
-                .add_filter("Connection report", &[format])
+                .set_title(t("Save connection report"))
+                .add_filter(t("Connection report"), &[format])
                 .set_file_name(format!(
                     "uptime-{}.{}",
                     Local::now().format("%Y-%m-%d"),
@@ -252,15 +315,25 @@ impl NativeApp {
                 .save_file()
             {
                 std::fs::write(&path, bytes)?;
-                self.notice = Some(format!("Report saved to {}", path.display()));
+                self.notice = Some(translate_message(
+                    language,
+                    "Report saved to {}",
+                    &[(path.display()).to_string()],
+                ));
             }
             Ok(())
         })();
         if let Err(error) = result {
-            self.notice = Some(format!("Could not save the report: {error}"));
+            self.notice = Some(translate_message(
+                language,
+                "Could not save the report: {}",
+                &[(error).to_string()],
+            ));
         }
     }
     fn sidebar(&mut self, ctx: &egui::Context) {
+        let language = self.config.language;
+        let t = |key| tr(language, key);
         egui::SidePanel::left("navigation")
             .exact_width(180.0)
             .resizable(false)
@@ -280,10 +353,10 @@ impl NativeApp {
                 );
                 ui.add_space(38.0);
                 for (view, name) in [
-                    (View::Overview, "Overview"),
-                    (View::History, "Outage history"),
-                    (View::Reports, "Reports"),
-                    (View::Settings, "Settings"),
+                    (View::Overview, t("Overview")),
+                    (View::History, t("Outage history")),
+                    (View::Reports, t("Reports")),
+                    (View::Settings, t("Settings")),
                 ] {
                     let active = self.view == view;
                     let button = egui::Button::new(RichText::new(name).color(if active {
@@ -305,21 +378,25 @@ impl NativeApp {
                 ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                     ui.add_space(14.0);
                     ui.label(
-                        RichText::new(format!("Native desktop · v{}", updates::VERSION))
-                            .size(10.0)
-                            .color(Color32::from_rgb(169, 195, 174)),
+                        RichText::new(translate_message(
+                            language,
+                            "Native desktop · v{}",
+                            &[(updates::VERSION).to_string()],
+                        ))
+                        .size(10.0)
+                        .color(Color32::from_rgb(169, 195, 174)),
                     );
                     ui.label(
-                        RichText::new("Your history stays here.")
+                        RichText::new(t("Your history stays here."))
                             .size(11.0)
                             .color(Color32::from_rgb(193, 211, 196)),
                     );
                     ui.add_space(12.0);
-                    if ui.button("Quit monitor").clicked() {
+                    if ui.button(t("Quit monitor")).clicked() {
                         self.app.stop();
                     }
                     if self.app.tray_available.load(Ordering::Acquire)
-                        && ui.button("Hide to tray").clicked()
+                        && ui.button(t("Hide to tray")).clicked()
                     {
                         self.app.window_visible.store(false, Ordering::Release);
                         ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
@@ -328,42 +405,56 @@ impl NativeApp {
             });
     }
     fn overview(&mut self, ui: &mut egui::Ui) {
+        let language = self.config.language;
+        let t = |key| tr(language, key);
         let status = self.app.snapshot();
         let state = status.latest.as_ref().map(|s| s.state);
         let (title, description) = if status.paused {
             (
-                "Monitoring is paused.",
-                "Paused time is excluded from downtime. Resume whenever you’re ready.",
+                t("Monitoring is paused."),
+                t("Paused time is excluded from downtime. Resume whenever you’re ready."),
             )
         } else {
             match state {
                 Some(State::Online) => (
-                    "You’re connected. We’re keeping watch.",
-                    "Quietly checking your router and independent internet targets.",
+                    t("You’re connected. We’re keeping watch."),
+                    t("Quietly checking your router and independent internet targets."),
                 ),
                 Some(State::Upstream) => (
-                    "The internet isn’t responding.",
-                    "Your router replied, but all public targets failed. The issue may be upstream.",
+                    t("The internet isn’t responding."),
+                    t(
+                        "Your router replied, but all public targets failed. The issue may be upstream.",
+                    ),
                 ),
                 Some(State::Local) => (
-                    "Your local connection needs a look.",
-                    "Neither your router nor the internet targets replied. Check your Wi-Fi, cables, and router.",
+                    t("Your local connection needs a look."),
+                    t(
+                        "Neither your router nor the internet targets replied. Check your Wi-Fi, cables, and router.",
+                    ),
                 ),
                 Some(State::Undetermined) => (
-                    "The internet isn’t responding.",
-                    "Public targets failed; router reachability is unknown.",
+                    t("The internet isn’t responding."),
+                    t("Public targets failed; router reachability is unknown."),
                 ),
                 _ => (
-                    "Getting to know your connection…",
-                    "The first connection checks are on their way. Unobserved time is excluded.",
+                    t("Getting to know your connection…"),
+                    t("The first connection checks are on their way. Unobserved time is excluded."),
                 ),
             }
         };
         egui::Frame::new()
             .fill(if state.is_some_and(State::is_down) {
-                Color32::from_rgb(251, 237, 224)
+                if ui.visuals().dark_mode {
+                    Color32::from_rgb(65, 44, 32)
+                } else {
+                    Color32::from_rgb(251, 237, 224)
+                }
             } else {
-                Color32::from_rgb(235, 244, 227)
+                if ui.visuals().dark_mode {
+                    Color32::from_rgb(35, 57, 41)
+                } else {
+                    Color32::from_rgb(235, 244, 227)
+                }
             })
             .inner_margin(20)
             .corner_radius(8)
@@ -375,40 +466,48 @@ impl NativeApp {
         ui.add_space(16.0);
         let Some(report) = self.report.as_ref() else {
             ui.spinner();
-            muted(ui, "Loading your local history…");
+            muted(ui, t("Loading your local history…"));
             return;
         };
         let stats = [
             (
-                "Connection uptime",
+                t("Connection uptime"),
                 report
                     .uptime_percent
                     .map(|v| format!("{v:.2}%"))
                     .unwrap_or("—".into()),
-                "Of monitored time".to_string(),
+                t("Of monitored time").to_string(),
             ),
             (
-                "Outages",
+                t("Outages"),
                 report.outage_count.to_string(),
-                format!("Lasting {}s or longer", report.minimum_outage_seconds),
+                translate_message(
+                    language,
+                    "Lasting {}s or longer",
+                    &[(report.minimum_outage_seconds).to_string()],
+                ),
             ),
             (
-                "Total downtime",
-                duration(report.downtime_seconds),
-                format!("Longest: {}", duration(report.longest_outage_seconds)),
+                t("Total downtime"),
+                duration(report.downtime_seconds, language),
+                translate_message(
+                    language,
+                    "Longest: {}",
+                    &[(duration(report.longest_outage_seconds, language)).to_string()],
+                ),
             ),
             (
-                "Average latency",
+                t("Average latency"),
                 report
                     .average_latency_ms
-                    .map(|v| format!("{v:.0} ms"))
+                    .map(|v| translate_message(language, "{} ms", &[format!("{v:.0}")]))
                     .unwrap_or("—".into()),
-                "Fastest public target per check".into(),
+                t("Fastest public target per check").into(),
             ),
         ];
         ui.columns(4, |columns| {
             for (column, (label, value, detail)) in columns.iter_mut().zip(stats) {
-                card().show(column, |ui| {
+                card(column).show(column, |ui| {
                     ui.set_min_width(ui.available_width());
                     muted(ui, label);
                     ui.label(RichText::new(value).size(29.0).strong());
@@ -417,14 +516,17 @@ impl NativeApp {
             }
         });
         ui.add_space(16.0);
-        card().show(ui, |ui| {
-            ui.heading("Connection timeline");
-            muted(ui, "Only observed time is counted. Gaps stay unmonitored.");
+        card(ui).show(ui, |ui| {
+            ui.heading(t("Connection timeline"));
+            muted(
+                ui,
+                t("Only observed time is counted. Gaps stay unmonitored."),
+            );
             ui.add_space(10.0);
             let (rect, response) =
                 ui.allocate_exact_size(Vec2::new(ui.available_width(), 30.0), egui::Sense::hover());
             let painter = ui.painter();
-            painter.rect_filled(rect, 4, LINE);
+            painter.rect_filled(rect, 4, ui.visuals().faint_bg_color);
             let width = report.end - report.start;
             for online in [true, false] {
                 for span in &report.spans {
@@ -455,7 +557,11 @@ impl NativeApp {
                     .find(|s| s.started_at <= t && s.ended_at >= t)
                     .map(|s| s.state.as_str())
                     .unwrap_or("unmonitored");
-                response.on_hover_text(format!("{} · {state}", timestamp(t)));
+                response.on_hover_text(format!(
+                    "{} · {}",
+                    timestamp(t),
+                    state_label(language, state)
+                ));
             }
             ui.horizontal(|ui| {
                 muted(ui, timestamp(report.start));
@@ -465,10 +571,10 @@ impl NativeApp {
             });
             ui.horizontal_wrapped(|ui| {
                 for (label, color) in [
-                    ("Online", GREEN),
-                    ("Internet issue", ORANGE),
-                    ("Local network", RED),
-                    ("Unmonitored", MUTED),
+                    (t("Online"), GREEN),
+                    (t("Internet issue"), ORANGE),
+                    (t("Local network"), RED),
+                    (t("Unmonitored"), ui.visuals().weak_text_color()),
                 ] {
                     ui.horizontal(|ui| {
                         let (rect, _) =
@@ -480,42 +586,58 @@ impl NativeApp {
             });
             muted(
                 ui,
-                format!(
+                translate_message(
+                    language,
                     "{} monitored · {} unmonitored",
-                    duration(report.monitored_seconds),
-                    duration(report.unmonitored_seconds)
+                    &[
+                        (duration(report.monitored_seconds, language)).to_string(),
+                        (duration(report.unmonitored_seconds, language)).to_string(),
+                    ],
                 ),
             );
         });
         ui.add_space(16.0);
         ui.columns(2, |columns| {
-            card().show(&mut columns[0], |ui| {
-                ui.heading("Where’s the problem?");
-                muted(ui, "Your router and the internet are checked separately.");
+            card(&columns[0]).show(&mut columns[0], |ui| {
+                ui.heading(t("Where’s the problem?"));
+                muted(
+                    ui,
+                    t("Your router and the internet are checked separately."),
+                );
                 ui.add_space(16.0);
                 if let Some(sample) = status.latest.as_ref() {
                     egui::Grid::new("network")
                         .spacing([24.0, 14.0])
                         .show(ui, |ui| {
-                            ui.strong("Your router");
+                            ui.strong(t("Your router"));
                             ui.monospace(
-                                sample.router.address.as_deref().unwrap_or("Not detected"),
+                                sample
+                                    .router
+                                    .address
+                                    .as_deref()
+                                    .unwrap_or(t("Not detected")),
                             );
                             ui.end_row();
-                            ui.label("Router response");
+                            ui.label(t("Router response"));
                             ui.label(match sample.router.ok {
-                                Some(true) => {
-                                    format!("{} ms", sample.router.latency_ms.unwrap_or(0.0))
-                                }
-                                Some(false) => "No reply".into(),
-                                None => "Unknown".into(),
+                                Some(true) => translate_message(
+                                    language,
+                                    "{} ms",
+                                    &[sample.router.latency_ms.unwrap_or(0.0).to_string()],
+                                ),
+                                Some(false) => t("No reply").into(),
+                                None => t("Unknown").into(),
                             });
                             ui.end_row();
-                            ui.strong("The internet");
-                            ui.label(format!(
+                            ui.strong(t("The internet"));
+                            ui.label(translate_message(
+                                language,
                                 "{} of {} targets replying",
-                                sample.targets.iter().filter(|t| t.ok == Some(true)).count(),
-                                sample.targets.len()
+                                &[
+                                    (sample.targets.iter().filter(|t| t.ok == Some(true)).count())
+                                        .to_string(),
+                                    (sample.targets.len()).to_string(),
+                                ],
                             ));
                             ui.end_row();
                         });
@@ -524,14 +646,19 @@ impl NativeApp {
                             ui,
                             format!(
                                 "{} · {}",
-                                target.name.as_deref().unwrap_or("Target"),
+                                target.name.as_deref().unwrap_or(t("Target")),
                                 target
                                     .latency_ms
-                                    .map(|v| format!("{v:.0} ms"))
+                                    .map(|v| translate_message(
+                                        language,
+                                        "{} ms",
+                                        &[format!("{v:.0}")]
+                                    ))
                                     .unwrap_or_else(|| target
                                         .error
-                                        .clone()
-                                        .unwrap_or("No reply".into()))
+                                        .as_deref()
+                                        .map(|detail| diagnostic(language, detail))
+                                        .unwrap_or(t("No reply").into()))
                             ),
                         );
                     }
@@ -539,16 +666,16 @@ impl NativeApp {
                     muted(
                         ui,
                         if status.paused {
-                            "Monitoring paused"
+                            t("Monitoring paused")
                         } else {
-                            "Waiting for the first check"
+                            t("Waiting for the first check")
                         },
                     );
                 }
             });
-            card().show(&mut columns[1], |ui| {
-                ui.heading("Latency at a glance");
-                muted(ui, "Fastest public target per check, in milliseconds.");
+            card(&columns[1]).show(&mut columns[1], |ui| {
+                ui.heading(t("Latency at a glance"));
+                muted(ui, t("Fastest public target per check, in milliseconds."));
                 let (rect, _) = ui.allocate_exact_size(
                     Vec2::new(ui.available_width(), 150.0),
                     egui::Sense::hover(),
@@ -564,7 +691,7 @@ impl NativeApp {
                     let y = rect.top() + i as f32 * rect.height() / 3.0;
                     painter.line_segment(
                         [egui::pos2(rect.left(), y), egui::pos2(rect.right(), y)],
-                        Stroke::new(1.0_f32, LINE),
+                        Stroke::new(1.0_f32, ui.visuals().widgets.noninteractive.bg_stroke.color),
                     );
                 }
                 let mut previous = None;
@@ -588,42 +715,51 @@ impl NativeApp {
                         previous = None;
                     }
                 }
-                muted(ui, format!("{} checks in this period", report.check_count));
+                muted(
+                    ui,
+                    translate_message(
+                        language,
+                        "{} checks in this period",
+                        &[(report.check_count).to_string()],
+                    ),
+                );
             });
         });
         ui.add_space(16.0);
-        card().show(ui, |ui| {
+        card(ui).show(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.heading("Recent outages");
-                if ui.small_button("View history").clicked() {
+                ui.heading(t("Recent outages"));
+                if ui.small_button(t("View history")).clicked() {
                     self.view = View::History;
                 }
             });
-            outage_table(ui, report, 0, 4);
+            outage_table(ui, report, 0, 4, language);
         });
         muted(
             ui,
-            "Close this window to keep recording in the tray. Quit monitor to stop.",
+            t("Close this window to keep recording in the tray. Quit monitor to stop."),
         );
     }
     fn history(&mut self, ui: &mut egui::Ui) {
+        let language = self.config.language;
+        let t = |key| tr(language, key);
         ui.horizontal(|ui| {
-            ui.label("Show");
+            ui.label(t("Show"));
             egui::ComboBox::from_id_salt("cause")
                 .selected_text(
                     [
-                        "All causes",
-                        "Internet issues",
-                        "Local network",
-                        "Other / mixed",
+                        t("All causes"),
+                        t("Internet issues"),
+                        t("Local network"),
+                        t("Other / mixed"),
                     ][self.cause],
                 )
                 .show_ui(ui, |ui| {
                     for (i, label) in [
-                        "All causes",
-                        "Internet issues",
-                        "Local network",
-                        "Other / mixed",
+                        t("All causes"),
+                        t("Internet issues"),
+                        t("Local network"),
+                        t("Other / mixed"),
                     ]
                     .iter()
                     .enumerate()
@@ -633,36 +769,46 @@ impl NativeApp {
                 });
         });
         if let Some(report) = &self.report {
-            card().show(ui, |ui| {
-                ui.heading(format!(
+            card(ui).show(ui, |ui| {
+                ui.heading(translate_message(
+                    language,
                     "{} outages · {} of downtime",
-                    report.outage_count,
-                    duration(report.downtime_seconds)
+                    &[
+                        (report.outage_count).to_string(),
+                        (duration(report.downtime_seconds, language)).to_string(),
+                    ],
                 ));
-                outage_table(ui, report, self.cause, 500);
+                outage_table(ui, report, self.cause, 500, language);
                 if report.outages_truncated {
                     muted(
                         ui,
-                        "Showing the latest 500 events. Export a report for the complete list.",
+                        t("Showing the latest 500 events. Export a report for the complete list."),
                     );
                 }
             });
         }
         muted(
             ui,
-            "Interrupted means observation stopped before recovery was confirmed. Router evidence suggests a location; it does not prove ISP responsibility.",
+            t(
+                "Interrupted means observation stopped before recovery was confirmed. Router evidence suggests a location; it does not prove ISP responsibility.",
+            ),
         );
     }
     fn reports(&mut self, ui: &mut egui::Ui) {
+        let language = self.config.language;
+        let t = |key| tr(language, key);
         if let Some(report) = &self.report {
-            card().show(ui, |ui| {
-                muted(ui, "INTERNET UPTIME MONITOR · CONNECTION REPORT");
+            card(ui).show(ui, |ui| {
+                muted(ui, t("INTERNET UPTIME MONITOR · CONNECTION REPORT"));
                 ui.add_space(14.0);
                 ui.label(
-                    RichText::new(format!(
+                    RichText::new(translate_message(
+                        language,
                         "{} outages. {} of downtime.",
-                        report.outage_count,
-                        duration(report.downtime_seconds)
+                        &[
+                            (report.outage_count).to_string(),
+                            (duration(report.downtime_seconds, language)).to_string(),
+                        ],
                     ))
                     .size(27.0)
                     .strong(),
@@ -676,22 +822,32 @@ impl NativeApp {
                     .spacing([50.0, 14.0])
                     .show(ui, |ui| {
                         for (label, value) in [
-                            ("Monitored time", duration(report.monitored_seconds)),
-                            ("Unmonitored time", duration(report.unmonitored_seconds)),
                             (
-                                "Connection availability",
+                                t("Monitored time"),
+                                duration(report.monitored_seconds, language),
+                            ),
+                            (
+                                t("Unmonitored time"),
+                                duration(report.unmonitored_seconds, language),
+                            ),
+                            (
+                                t("Connection availability"),
                                 report
                                     .uptime_percent
                                     .map(|v| format!("{v:.3}%"))
-                                    .unwrap_or("No monitored time".into()),
+                                    .unwrap_or(t("No monitored time").into()),
                             ),
                             (
-                                "Longest interruption",
-                                duration(report.longest_outage_seconds),
+                                t("Longest interruption"),
+                                duration(report.longest_outage_seconds, language),
                             ),
                             (
-                                "Minimum outage length",
-                                format!("{}s", report.minimum_outage_seconds),
+                                t("Minimum outage length"),
+                                translate_message(
+                                    language,
+                                    "{}s",
+                                    &[report.minimum_outage_seconds.to_string()],
+                                ),
                             ),
                         ] {
                             muted(ui, label);
@@ -703,83 +859,128 @@ impl NativeApp {
             ui.add_space(16.0);
         }
         ui.horizontal(|ui| {
-            if ui.button("Save readable report…").clicked() {
+            if ui.button(t("Save readable report…")).clicked() {
                 self.export("txt");
             }
-            if ui.button("Export CSV…").clicked() {
+            if ui.button(t("Export CSV…")).clicked() {
                 self.export("csv");
             }
-            if ui.button("Export JSON…").clicked() {
+            if ui.button(t("Export JSON…")).clicked() {
                 self.export("json");
             }
         });
         ui.add_space(12.0);
         muted(
             ui,
-            "Exports use UTC timestamps and include monitoring coverage. ICMP filtering can look like an outage; DNS, HTTPS, and bandwidth are not tested.",
+            t(
+                "Exports use UTC timestamps and include monitoring coverage. ICMP filtering can look like an outage; DNS, HTTPS, and bandwidth are not tested.",
+            ),
         );
     }
     fn settings(&mut self, ui: &mut egui::Ui) {
+        let language = self.config.language;
+        let t = |key| tr(language, key);
+        self.appearance(ui);
+        ui.add_space(16.0);
         let demo = self.app.snapshot().demo;
         ui.columns(2,|columns| {
         {
         let ui=&mut columns[0];
-        card().show(ui,|ui| {ui.heading("Monitoring preferences");ui.add_space(10.0);ui.add_enabled_ui(!demo,|ui| {
+        card(ui).show(ui,|ui| {ui.heading(t("Monitoring preferences"));ui.add_space(10.0);ui.add_enabled_ui(!demo,|ui| {
             egui::Grid::new("preferences").spacing([30.0,14.0]).show(ui,|ui| {
-                ui.label("Check interval");ui.add(egui::DragValue::new(&mut self.config.interval_seconds).range(2..=300).suffix(" seconds"));ui.end_row();
-                ui.label("Response timeout");ui.add(egui::DragValue::new(&mut self.config.timeout_ms).range(200..=5000).suffix(" ms"));ui.end_row();
-                ui.label("Minimum outage length");ui.add(egui::DragValue::new(&mut self.config.minimum_outage_seconds).range(0..=300).suffix(" seconds"));ui.end_row();
-                ui.label("Router IPv4 address");ui.add(egui::TextEdit::singleline(&mut self.config.router).hint_text("Auto-detect").desired_width(180.0));ui.end_row();
-            });ui.add_space(8.0);muted(ui,"Short interruptions affect availability even when excluded from outage counts.");
-            ui.checkbox(&mut self.config.check_updates_automatically,"Check for updates on startup");muted(ui,"Also checks once a day. Downloads and installation are always your choice.");
-            ui.add_space(12.0);ui.strong("Independent internet targets");let mut remove=None;
-            for (i,target) in self.config.targets.iter_mut().enumerate() {ui.horizontal(|ui| {ui.add(egui::TextEdit::singleline(&mut target.name).desired_width(130.0));ui.add(egui::TextEdit::singleline(&mut target.address).desired_width(150.0));if ui.small_button("Remove").clicked() {remove=Some(i);}});}
+                ui.label(t("Check interval"));ui.add(egui::DragValue::new(&mut self.config.interval_seconds).range(2..=300).suffix(t(" seconds")));ui.end_row();
+                ui.label(t("Response timeout"));ui.add(egui::DragValue::new(&mut self.config.timeout_ms).range(200..=5000).suffix(t(" ms")));ui.end_row();
+                ui.label(t("Minimum outage length"));ui.add(egui::DragValue::new(&mut self.config.minimum_outage_seconds).range(0..=300).suffix(t(" seconds")));ui.end_row();
+                ui.label(t("Router IPv4 address"));ui.add(egui::TextEdit::singleline(&mut self.config.router).hint_text(t("Auto-detect")).desired_width(180.0));ui.end_row();
+            });ui.add_space(8.0);muted(ui,t("Short interruptions affect availability even when excluded from outage counts."));
+            ui.checkbox(&mut self.config.check_updates_automatically,t("Check for updates on startup"));muted(ui,t("Also checks once a day. Downloads and installation are always your choice."));
+            ui.add_space(12.0);ui.strong(t("Independent internet targets"));let mut remove=None;
+            for (i,target) in self.config.targets.iter_mut().enumerate() {ui.horizontal(|ui| {ui.add(egui::TextEdit::singleline(&mut target.name).desired_width(130.0));ui.add(egui::TextEdit::singleline(&mut target.address).desired_width(150.0));if ui.small_button(t("Remove")).clicked() {remove=Some(i);}});}
             if let Some(i)=remove && self.config.targets.len()>2 {self.config.targets.remove(i);}
-            if self.config.targets.len()<5 && ui.small_button("Add target").clicked() {self.config.targets.push(crate::model::Target {name:"New target".into(),address:String::new()});}
-            ui.add_space(10.0);ui.horizontal(|ui| {if ui.button("Save preferences").clicked() {match self.app.configure(self.config.clone()) {Ok(())=>{self.notice=Some("Preferences saved. The next check will use them.".into());self.last_refresh=Instant::now()-Duration::from_secs(10);},Err(error)=>self.notice=Some(error.to_string())}}
-            if ui.button("Revert").clicked() {self.config=self.app.snapshot().config;}});
+            if self.config.targets.len()<5 && ui.small_button(t("Add target")).clicked() {self.config.targets.push(crate::model::Target {name:t("New target").into(),address:String::new()});}
+            ui.add_space(10.0);ui.horizontal(|ui| {if ui.button(t("Save preferences")).clicked() {match self.app.configure(self.config.clone()) {Ok(())=>{self.notice=Some(t("Preferences saved. The next check will use them.").into());self.last_refresh=Instant::now()-Duration::from_secs(10);},Err(error)=>self.notice=Some(diagnostic(language, &error.to_string()))}}
+            if ui.button(t("Revert")).clicked() {self.config=self.app.snapshot().config;}});
         });});
         }
         let ui=&mut columns[1];
         self.updates(ui);
         ui.add_space(16.0);
-        card().show(ui,|ui| {ui.heading("On this computer");muted(ui,"History folder"); ui.add(egui::Label::new(self.data.display().to_string()).truncate()).on_hover_text(self.data.display().to_string());muted(ui,"Raw checks are retained for 30 days. Outages and connection intervals are retained indefinitely.");
-            #[cfg(windows)] {let mut enabled=platform::startup_enabled();if ui.checkbox(&mut enabled,"Start quietly with Windows").changed() && let Err(error)=platform::set_startup(enabled,&self.data) {self.notice=Some(error.to_string());}}
+        card(ui).show(ui,|ui| {ui.heading(t("On this computer"));muted(ui,t("History folder")); ui.add(egui::Label::new(self.data.display().to_string()).truncate()).on_hover_text(self.data.display().to_string());muted(ui,t("Raw checks are retained for 30 days. Outages and connection intervals are retained indefinitely."));
+            #[cfg(windows)] {let mut enabled=platform::startup_enabled();if ui.checkbox(&mut enabled,t("Start quietly with Windows")).changed() && let Err(error)=platform::set_startup(enabled,&self.data) {self.notice=Some(diagnostic(language, &error.to_string()));}}
         });
         });
     }
+    fn appearance(&mut self, ui: &mut egui::Ui) {
+        let language = self.config.language;
+        let t = |key| tr(language, key);
+        let previous = (self.config.language, self.config.theme);
+        card(ui).show(ui, |ui| {
+            ui.heading(t("Appearance and language"));
+            ui.horizontal_wrapped(|ui| {
+                ui.label(t("Language"));
+                egui::ComboBox::from_id_salt("language")
+                    .selected_text(self.config.language.native_name())
+                    .show_ui(ui, |ui| {
+                        for language in Language::ALL {
+                            ui.selectable_value(
+                                &mut self.config.language,
+                                language,
+                                language.native_name(),
+                            );
+                        }
+                    });
+                ui.label(t("Theme"));
+                ui.selectable_value(&mut self.config.theme, Theme::Light, t("Light"));
+                ui.selectable_value(&mut self.config.theme, Theme::Dark, t("Dark"));
+            });
+            muted(ui, t("Applied immediately and saved automatically."));
+        });
+        if previous != (self.config.language, self.config.theme) {
+            if let Err(error) = self
+                .app
+                .set_appearance(self.config.language, self.config.theme)
+            {
+                self.config.language = previous.0;
+                self.config.theme = previous.1;
+                self.notice = Some(translate_message(
+                    language,
+                    "Preferences could not be saved: {}",
+                    &[error.to_string()],
+                ));
+            } else {
+                apply_theme(ui.ctx(), self.config.theme);
+                ui.ctx().request_repaint();
+            }
+        }
+    }
     fn updates(&mut self, ui: &mut egui::Ui) {
+        let language = self.config.language;
+        let t = |key| tr(language, key);
         let update = self.app.updates.snapshot();
         let busy = matches!(
             update.phase.as_str(),
             "checking" | "downloading" | "restarting"
         );
-        card().show(ui, |ui| {
-            ui.heading("Application updates");
+        card(ui).show(ui, |ui| {
+            ui.heading(t("Application updates"));
             muted(
                 ui,
-                format!(
-                    "Installed version {} · native desktop",
-                    update.current_version
-                ),
+                translate_message(language, "Installed version {} · native desktop", &[(update.current_version).to_string()]),
             );
             ui.add_space(10.0);
             let message = match update.phase.as_str() {
-                "checking" => "Checking GitHub. Monitoring continues in the background.".into(),
-                "available" => format!(
-                    "Version {} is available.",
-                    update.latest_version.as_deref().unwrap_or("latest")
-                ),
-                "up_to_date" => "You’re up to date.".into(),
-                "downloading" => "Downloading and verifying the new executable…".into(),
-                "restarting" => "Update verified. Restarting the application…".into(),
+                "checking" => t("Checking GitHub. Monitoring continues in the background.").into(),
+                "available" => translate_message(language, "Version {} is available.", &[(update.latest_version.as_deref().unwrap_or(t("latest"))).to_string()]),
+                "up_to_date" => t("You’re up to date.").into(),
+                "downloading" => t("Downloading and verifying the new executable…").into(),
+                "restarting" => t("Update verified. Restarting the application…").into(),
                 "error" => update
                     .error
                     .clone()
-                    .unwrap_or("The update check failed. Try again later.".into()),
-                _ => "Check GitHub for the latest stable release.".into(),
+                    .unwrap_or(t("The update check failed. Try again later.").into()),
+                _ => t("Check GitHub for the latest stable release.").into(),
             };
-            ui.label(message);
+            ui.label(if update.phase == "error" { format!("{}\n{}", t("The update check failed. Try again later."), diagnostic(language, &message)) } else { message });
             if update.phase == "downloading" {
                 ui.add(
                     egui::ProgressBar::new(if update.total_bytes > 0 {
@@ -792,35 +993,42 @@ impl NativeApp {
             }
             ui.horizontal(|ui| {
                 if ui
-                    .add_enabled(!busy, egui::Button::new("Check for updates"))
+                    .add_enabled(!busy, egui::Button::new(t("Check for updates")))
                     .clicked()
                     && let Err(error) = self.app.updates.check()
                 {
-                    self.notice = Some(error.to_string());
+                    self.notice = Some(diagnostic(language, &error.to_string()));
                 }
                 if update.phase == "available"
                     && update.install_supported
                     && !self.app.snapshot().demo
-                    && ui.button("Download and install").clicked()
+                    && ui.button(t("Download and install")).clicked()
                     && let Err(error) = self.app.updates.install(&self.app)
                 {
-                    self.notice = Some(error.to_string());
+                    self.notice = Some(diagnostic(language, &error.to_string()));
                 }
                 if let Some(url) = &update.release_url {
-                    ui.hyperlink_to("Release notes", url);
+                    ui.hyperlink_to(t("Release notes"), url);
                 }
             });
             if let Some(checked) = update.checked_at {
-                muted(ui, format!("Last checked: {}", timestamp(checked)));
+                muted(ui, translate_message(language, "Last checked: {}", &[(timestamp(checked)).to_string()]));
             }
             muted(
                 ui,
-                "Downloads are verified with SHA-256. Your history and preferences are preserved.",
+                t("Downloads are verified with SHA-256. Your history and preferences are preserved."),
             );
         });
     }
 }
-fn outage_table(ui: &mut egui::Ui, report: &Report, cause: usize, limit: usize) {
+fn outage_table(
+    ui: &mut egui::Ui,
+    report: &Report,
+    cause: usize,
+    limit: usize,
+    language: Language,
+) {
+    let t = |key| tr(language, key);
     let events: Vec<_> = report
         .outages
         .iter()
@@ -834,8 +1042,11 @@ fn outage_table(ui: &mut egui::Ui, report: &Report, cause: usize, limit: usize) 
         .collect();
     if events.is_empty() {
         ui.add_space(20.0);
-        ui.strong("No outages on the record.");
-        muted(ui, "Interruptions will appear here when they are observed.");
+        ui.strong(t("No outages on the record."));
+        muted(
+            ui,
+            t("Interruptions will appear here when they are observed."),
+        );
         ui.add_space(14.0);
         return;
     }
@@ -845,37 +1056,37 @@ fn outage_table(ui: &mut egui::Ui, report: &Report, cause: usize, limit: usize) 
         .spacing([18.0, 12.0])
         .show(ui, |ui| {
             for name in [
-                "Started",
-                "Duration",
-                "Likely location",
-                "Router evidence",
-                "Status",
+                t("Started"),
+                t("Duration"),
+                t("Likely location"),
+                t("Router evidence"),
+                t("Status"),
             ] {
                 muted(ui, name);
             }
             ui.end_row();
             for event in events {
                 ui.label(timestamp(event.started_at));
-                ui.strong(duration(event.duration_seconds));
+                ui.strong(duration(event.duration_seconds, language));
                 ui.colored_label(
                     state_color(&event.cause),
                     match event.cause.as_str() {
-                        "upstream" => "Internet issue",
-                        "local" => "Local network",
-                        "mixed" => "Mixed evidence",
-                        _ => "Undetermined",
+                        "upstream" => t("Internet issue"),
+                        "local" => t("Local network"),
+                        "mixed" => t("Mixed evidence"),
+                        _ => t("Undetermined"),
                     },
                 );
                 ui.label(match event.cause.as_str() {
-                    "upstream" => "Responded",
-                    "local" => "No reply",
-                    "mixed" => "Changed",
-                    _ => "Unknown",
+                    "upstream" => t("Responded"),
+                    "local" => t("No reply"),
+                    "mixed" => t("Changed"),
+                    _ => t("Unknown"),
                 });
                 ui.label(match event.status.as_str() {
-                    "recovered" => "Recovered",
-                    "ongoing" => "Ongoing",
-                    _ => "Observation ended",
+                    "recovered" => t("Recovered"),
+                    "ongoing" => t("Ongoing"),
+                    _ => t("Observation ended"),
                 });
                 ui.end_row();
             }
@@ -883,6 +1094,8 @@ fn outage_table(ui: &mut egui::Ui, report: &Report, cause: usize, limit: usize) 
 }
 impl NativeApp {
     pub(crate) fn draw(&mut self, ctx: &egui::Context) {
+        let language = self.config.language;
+        let t = |key| tr(language, key);
         if !self.app.window_visible.load(Ordering::Acquire) {
             ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
         }
@@ -906,7 +1119,7 @@ impl NativeApp {
                     pixels.size[1] as u32,
                     image::ColorType::Rgba8,
                 ) {
-                    self.notice = Some(error.to_string());
+                    self.notice = Some(diagnostic(language, &error.to_string()));
                 } else {
                     self.app.stop();
                 }
@@ -935,7 +1148,13 @@ impl NativeApp {
             if generation == self.generation {
                 match result {
                     Ok(report) => self.report = Some(report),
-                    Err(error) => self.notice = Some(format!("Could not load history: {error}")),
+                    Err(error) => {
+                        self.notice = Some(translate_message(
+                            language,
+                            "Could not load history: {}",
+                            &[(error).to_string()],
+                        ))
+                    }
                 }
             }
         }
@@ -949,7 +1168,7 @@ impl NativeApp {
         egui::CentralPanel::default()
             .frame(
                 egui::Frame::new()
-                    .fill(Color32::from_rgb(247, 248, 245))
+                    .fill(ctx.style().visuals.panel_fill)
                     .inner_margin(28),
             )
             .show(ctx, |ui| {
@@ -957,20 +1176,24 @@ impl NativeApp {
                 ui.horizontal(|ui| {
                     ui.label(
                         RichText::new(match self.view {
-                            View::Overview => "Your internet, on record.",
-                            View::History => "Every disconnect, documented.",
-                            View::Reports => "A clear story. Ready to share.",
-                            View::Settings => "Make yourself comfortable.",
+                            View::Overview => t("Your internet, on record."),
+                            View::History => t("Every disconnect, documented."),
+                            View::Reports => t("A clear story. Ready to share."),
+                            View::Settings => t("Make yourself comfortable."),
                         })
                         .size(27.0)
                         .strong(),
                     );
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         egui::ComboBox::from_id_salt("period")
-                            .selected_text(self.period.label())
+                            .selected_text(self.period.label(language))
                             .show_ui(ui, |ui| {
                                 for period in [Period::Today, Period::Week, Period::Month] {
-                                    ui.selectable_value(&mut self.period, period, period.label());
+                                    ui.selectable_value(
+                                        &mut self.period,
+                                        period,
+                                        period.label(language),
+                                    );
                                 }
                             });
                     });
@@ -984,35 +1207,51 @@ impl NativeApp {
                     muted(
                         ui,
                         if status.paused {
-                            "Monitoring paused"
+                            t("Monitoring paused")
                         } else {
-                            "Quiet monitoring · no session limit"
+                            t("Quiet monitoring · no session limit")
                         },
                     );
                     if !status.demo
                         && ui
-                            .small_button(if status.paused { "Resume" } else { "Pause" })
+                            .small_button(if status.paused {
+                                t("Resume")
+                            } else {
+                                t("Pause")
+                            })
                             .clicked()
                         && let Err(error) =
                             self.app
                                 .control(if status.paused { "resume" } else { "pause" })
                     {
-                        self.notice = Some(error.to_string());
+                        self.notice = Some(diagnostic(language, &error.to_string()));
                     }
                     if status.demo {
-                        ui.colored_label(ORANGE, "DEMO DATA — not real measurements");
+                        ui.colored_label(ORANGE, t("DEMO DATA — not real measurements"));
                     }
                 });
                 ui.add_space(16.0);
                 if let Some(message) = self.notice.clone() {
                     egui::Frame::new()
-                        .fill(Color32::from_rgb(245, 239, 218))
+                        .fill(if ui.visuals().dark_mode {
+                            Color32::from_rgb(64, 56, 31)
+                        } else {
+                            Color32::from_rgb(245, 239, 218)
+                        })
                         .inner_margin(12)
                         .corner_radius(5)
                         .show(ui, |ui| {
                             ui.horizontal_wrapped(|ui| {
-                                ui.label(message);
-                                if ui.small_button("Dismiss").clicked() {
+                                ui.label(if update.phase == "error" {
+                                    format!(
+                                        "{}\n{}",
+                                        t("The update check failed. Try again later."),
+                                        diagnostic(language, &message)
+                                    )
+                                } else {
+                                    message
+                                });
+                                if ui.small_button(t("Dismiss")).clicked() {
                                     self.notice = None;
                                 }
                             });
@@ -1020,12 +1259,12 @@ impl NativeApp {
                     ui.add_space(12.0);
                 }
                 if let Some(error) = status.error {
-                    ui.colored_label(RED, error);
+                    ui.colored_label(RED, diagnostic(language, &error));
                 }
                 if self.app.updates.snapshot().phase == "available" && self.view != View::Settings {
                     ui.horizontal(|ui| {
-                        ui.label("A new version is available.");
-                        if ui.small_button("View update").clicked() {
+                        ui.label(t("A new version is available."));
+                        if ui.small_button(t("View update")).clicked() {
                             self.view = View::Settings;
                         }
                     });
@@ -1096,7 +1335,7 @@ mod tests {
     }
     #[test]
     fn durations_are_human_readable() {
-        assert_eq!(duration(480.0), "8m 0s");
-        assert_eq!(duration(5.0), "5s");
+        assert_eq!(duration(480.0, Language::English), "8m 0s");
+        assert_eq!(duration(5.0, Language::English), "5s");
     }
 }

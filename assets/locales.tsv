@@ -1,0 +1,199 @@
+Today|Сегодня|Aujourd’hui|Heute|Hoy|Oggi
+Last 7 days|Последние 7 дней|7 derniers jours|Letzte 7 Tage|Últimos 7 días|Ultimi 7 giorni
+Last 30 days|Последние 30 дней|30 derniers jours|Letzte 30 Tage|Últimos 30 días|Ultimi 30 giorni
+Save connection report|Сохранить отчёт о соединении|Enregistrer le rapport de connexion|Verbindungsbericht speichern|Guardar informe de conexión|Salva rapporto di connessione
+Connection report|Отчёт о соединении|Rapport de connexion|Verbindungsbericht|Informe de conexión|Rapporto di connessione
+Report saved to {}|Отчёт сохранён: {}|Rapport enregistré dans {}|Bericht gespeichert unter {}|Informe guardado en {}|Rapporto salvato in {}
+Could not save the report: {}|Не удалось сохранить отчёт: {}|Impossible d’enregistrer le rapport : {}|Bericht konnte nicht gespeichert werden: {}|No se pudo guardar el informe: {}|Impossibile salvare il rapporto: {}
+Could not publish application readiness: {}|Не удалось сообщить о готовности приложения: {}|Impossible de signaler que l’application est prête : {}|Bereitschaft konnte nicht gemeldet werden: {}|No se pudo comunicar que la aplicación está lista: {}|Impossibile comunicare che l’applicazione è pronta: {}
+Overview|Обзор|Vue d’ensemble|Übersicht|Resumen|Panoramica
+Outage history|История отключений|Historique des coupures|Ausfallverlauf|Historial de cortes|Cronologia interruzioni
+Reports|Отчёты|Rapports|Berichte|Informes|Rapporti
+Settings|Настройки|Paramètres|Einstellungen|Ajustes|Impostazioni
+Native desktop · v{}|Приложение · v{}|Application native · v{}|Desktop-Anwendung · v{}|Aplicación nativa · v{}|Applicazione nativa · v{}
+Your history stays here.|История остаётся здесь.|Votre historique reste ici.|Ihr Verlauf bleibt hier.|Tu historial permanece aquí.|La cronologia rimane qui.
+Quit monitor|Завершить мониторинг|Quitter le moniteur|Monitor beenden|Salir del monitor|Esci dal monitor
+Hide to tray|Свернуть в трей|Réduire dans la zone de notification|In den Infobereich minimieren|Minimizar al área de notificación|Riduci nell’area di notifica
+Monitoring is paused.|Мониторинг приостановлен.|La surveillance est en pause.|Überwachung pausiert.|La supervisión está en pausa.|Il monitoraggio è in pausa.
+Paused time is excluded from downtime. Resume whenever you’re ready.|Время паузы не учитывается как простой. Возобновите, когда будете готовы.|Le temps de pause est exclu des coupures. Reprenez quand vous le souhaitez.|Pausen zählen nicht als Ausfallzeit. Setzen Sie die Überwachung bei Bedarf fort.|Las pausas no cuentan como tiempo de corte. Reanuda cuando quieras.|Il tempo in pausa non conta come inattività. Riprendi quando vuoi.
+You’re connected. We’re keeping watch.|Соединение работает. Мы продолжаем наблюдать.|Vous êtes connecté. Nous veillons.|Sie sind verbunden. Wir behalten alles im Blick.|Tienes conexión. Seguimos vigilando.|Sei connesso. Continuiamo a controllare.
+Quietly checking your router and independent internet targets.|Незаметно проверяем роутер и независимые узлы в интернете.|Vérification discrète du routeur et de cibles Internet indépendantes.|Router und unabhängige Internetziele werden unauffällig geprüft.|Comprobación discreta del router y de destinos independientes de Internet.|Controllo discreto del router e di destinazioni Internet indipendenti.
+The internet isn’t responding.|Интернет не отвечает.|Internet ne répond pas.|Das Internet antwortet nicht.|Internet no responde.|Internet non risponde.
+Your router replied, but all public targets failed. The issue may be upstream.|Роутер ответил, но внешние узлы недоступны. Возможна проблема у провайдера.|Le routeur répond, mais aucune cible publique ne répond. Le problème peut être en amont.|Der Router antwortet, aber kein öffentliches Ziel. Die Störung liegt möglicherweise beim Anbieter.|El router respondió, pero fallaron todos los destinos públicos. El problema puede ser externo.|Il router risponde, ma nessuna destinazione pubblica risponde. Il problema potrebbe essere a monte.
+Your local connection needs a look.|Проверьте локальное соединение.|Votre connexion locale mérite une vérification.|Prüfen Sie Ihre lokale Verbindung.|Revisa tu conexión local.|Controlla la connessione locale.
+Neither your router nor the internet targets replied. Check your Wi-Fi, cables, and router.|Ни роутер, ни внешние узлы не ответили. Проверьте Wi-Fi, кабели и роутер.|Ni le routeur ni les cibles Internet ne répondent. Vérifiez le Wi-Fi, les câbles et le routeur.|Weder Router noch Internetziele antworten. Prüfen Sie WLAN, Kabel und Router.|No respondieron ni el router ni los destinos de Internet. Revisa el wifi, los cables y el router.|Non rispondono né il router né le destinazioni Internet. Controlla Wi-Fi, cavi e router.
+Public targets failed; router reachability is unknown.|Внешние узлы недоступны; доступность роутера неизвестна.|Les cibles publiques ne répondent pas ; l’état du routeur est inconnu.|Öffentliche Ziele antworten nicht; die Erreichbarkeit des Routers ist unbekannt.|Fallaron los destinos públicos; se desconoce si el router responde.|Le destinazioni pubbliche non rispondono; la raggiungibilità del router è sconosciuta.
+Getting to know your connection…|Проверяем ваше соединение…|Découverte de votre connexion…|Ihre Verbindung wird geprüft…|Comprobando tu conexión…|Analisi della connessione…
+The first connection checks are on their way. Unobserved time is excluded.|Первые проверки уже выполняются. Ненаблюдаемое время не учитывается.|Les premières vérifications sont en cours. Le temps non observé est exclu.|Die ersten Prüfungen laufen. Unbeobachtete Zeit wird ausgeschlossen.|Las primeras comprobaciones están en marcha. Se excluye el tiempo sin observar.|Sono in corso i primi controlli. Il tempo non osservato viene escluso.
+Loading your local history…|Загружаем локальную историю…|Chargement de votre historique local…|Lokaler Verlauf wird geladen…|Cargando tu historial local…|Caricamento della cronologia locale…
+Connection uptime|Доступность соединения|Disponibilité de la connexion|Verbindungsverfügbarkeit|Disponibilidad de conexión|Disponibilità della connessione
+Of monitored time|От времени наблюдения|Du temps surveillé|Der überwachten Zeit|Del tiempo supervisado|Del tempo monitorato
+Outages|Отключения|Coupures|Ausfälle|Cortes|Interruzioni
+Lasting {}s or longer|Длительностью от {} с|D’au moins {} s|Mindestens {} s lang|De al menos {} s|Di almeno {} s
+Total downtime|Общий простой|Durée totale des coupures|Gesamte Ausfallzeit|Tiempo total sin conexión|Inattività totale
+Longest: {}|Самое долгое: {}|La plus longue : {}|Längster Ausfall: {}|El más largo: {}|La più lunga: {}
+Average latency|Средняя задержка|Latence moyenne|Mittlere Latenz|Latencia media|Latenza media
+Fastest public target per check|Самый быстрый внешний узел|Cible publique la plus rapide par test|Schnellstes öffentliches Ziel je Prüfung|Destino público más rápido por prueba|Destinazione pubblica più veloce per controllo
+Connection timeline|Хронология соединения|Chronologie de connexion|Verbindungszeitachse|Cronología de conexión|Cronologia della connessione
+Only observed time is counted. Gaps stay unmonitored.|Учитывается только время наблюдения. Пробелы остаются без данных.|Seul le temps observé compte. Les périodes sans données restent non surveillées.|Nur beobachtete Zeit zählt. Lücken bleiben unüberwacht.|Solo cuenta el tiempo observado. Los intervalos sin datos quedan sin supervisión.|Conta solo il tempo osservato. Le lacune restano non monitorate.
+Online|В сети|En ligne|Online|En línea|In linea
+Internet issue|Проблема интернета|Problème Internet|Internetstörung|Problema de Internet|Problema Internet
+Local network|Локальная сеть|Réseau local|Lokales Netzwerk|Red local|Rete locale
+Unmonitored|Без наблюдения|Non surveillé|Unüberwacht|Sin supervisión|Non monitorato
+{} monitored · {} unmonitored|{} наблюдения · {} без наблюдения|{} surveillé · {} non surveillé|{} überwacht · {} unüberwacht|{} supervisado · {} sin supervisión|{} monitorato · {} non monitorato
+Where’s the problem?|Где проблема?|Où se situe le problème ?|Wo liegt das Problem?|¿Dónde está el problema?|Dov’è il problema?
+Your router and the internet are checked separately.|Роутер и интернет проверяются отдельно.|Le routeur et Internet sont vérifiés séparément.|Router und Internet werden getrennt geprüft.|El router e Internet se comprueban por separado.|Il router e Internet vengono controllati separatamente.
+Your router|Ваш роутер|Votre routeur|Ihr Router|Tu router|Il tuo router
+Not detected|Не обнаружен|Non détecté|Nicht erkannt|No detectado|Non rilevato
+Router response|Ответ роутера|Réponse du routeur|Routerantwort|Respuesta del router|Risposta del router
+No reply|Нет ответа|Aucune réponse|Keine Antwort|Sin respuesta|Nessuna risposta
+Unknown|Неизвестно|Inconnu|Unbekannt|Desconocido|Sconosciuto
+The internet|Интернет|Internet|Internet|Internet|Internet
+{} of {} targets replying|Отвечают {} из {} узлов|{} cibles sur {} répondent|{} von {} Zielen antworten|Responden {} de {} destinos|Rispondono {} destinazioni su {}
+Target|Узел|Cible|Ziel|Destino|Destinazione
+Monitoring paused|Мониторинг приостановлен|Surveillance en pause|Überwachung pausiert|Supervisión en pausa|Monitoraggio in pausa
+Waiting for the first check|Ожидаем первую проверку|En attente du premier test|Warten auf die erste Prüfung|Esperando la primera comprobación|In attesa del primo controllo
+Latency at a glance|Задержка соединения|Aperçu de la latence|Latenz im Überblick|Latencia de un vistazo|Latenza a colpo d’occhio
+Fastest public target per check, in milliseconds.|Самый быстрый внешний узел при каждой проверке, в миллисекундах.|Cible publique la plus rapide par test, en millisecondes.|Schnellstes öffentliches Ziel je Prüfung, in Millisekunden.|Destino público más rápido por prueba, en milisegundos.|Destinazione pubblica più veloce per controllo, in millisecondi.
+{} checks in this period|{} проверок за период|{} vérifications sur cette période|{} Prüfungen in diesem Zeitraum|{} comprobaciones en este período|{} controlli in questo periodo
+Recent outages|Недавние отключения|Coupures récentes|Letzte Ausfälle|Cortes recientes|Interruzioni recenti
+View history|Открыть историю|Voir l’historique|Verlauf anzeigen|Ver historial|Mostra cronologia
+Close this window to keep recording in the tray. Quit monitor to stop.|Закройте окно, чтобы продолжить запись в трее. Для остановки выберите «Завершить мониторинг».|Fermez cette fenêtre pour continuer dans la zone de notification. Quittez le moniteur pour arrêter.|Schließen Sie das Fenster, um im Infobereich weiter aufzuzeichnen. Beenden Sie den Monitor zum Stoppen.|Cierra esta ventana para seguir grabando en el área de notificación. Sal del monitor para detenerlo.|Chiudi questa finestra per continuare nell’area di notifica. Esci dal monitor per interrompere.
+Show|Показать|Afficher|Anzeigen|Mostrar|Mostra
+All causes|Все причины|Toutes les causes|Alle Ursachen|Todas las causas|Tutte le cause
+Internet issues|Проблемы интернета|Problèmes Internet|Internetstörungen|Problemas de Internet|Problemi Internet
+Other / mixed|Другие / смешанные|Autres / mixtes|Sonstige / gemischt|Otros / mixtos|Altre / miste
+{} outages · {} of downtime|{} отключений · {} простоя|{} coupures · {} d’indisponibilité|{} Ausfälle · {} Ausfallzeit|{} cortes · {} sin conexión|{} interruzioni · {} di inattività
+Showing the latest 500 events. Export a report for the complete list.|Показаны последние 500 событий. Экспортируйте отчёт для полного списка.|Les 500 derniers événements sont affichés. Exportez un rapport pour la liste complète.|Die letzten 500 Ereignisse werden angezeigt. Exportieren Sie einen Bericht für die vollständige Liste.|Se muestran los últimos 500 eventos. Exporta un informe para ver la lista completa.|Sono mostrati gli ultimi 500 eventi. Esporta un rapporto per l’elenco completo.
+Interrupted means observation stopped before recovery was confirmed. Router evidence suggests a location; it does not prove ISP responsibility.|«Наблюдение завершено» означает остановку до подтверждения восстановления. Ответ роутера указывает возможное место проблемы, но не доказывает вину провайдера.|Une observation terminée signifie que la surveillance s’est arrêtée avant la confirmation du rétablissement. Les indices du routeur ne prouvent pas la responsabilité du fournisseur.|Beendete Beobachtung bedeutet, dass vor bestätigter Wiederherstellung gestoppt wurde. Routerdaten deuten auf einen Ort hin, beweisen aber keine Verantwortung des Anbieters.|Observación finalizada significa que se detuvo antes de confirmar la recuperación. Los datos del router sugieren una ubicación, pero no prueban la responsabilidad del proveedor.|Osservazione terminata significa che il monitoraggio si è fermato prima della conferma del ripristino. I dati del router suggeriscono una posizione, senza provare responsabilità del provider.
+INTERNET UPTIME MONITOR · CONNECTION REPORT|INTERNET UPTIME MONITOR · ОТЧЁТ О СОЕДИНЕНИИ|INTERNET UPTIME MONITOR · RAPPORT DE CONNEXION|INTERNET UPTIME MONITOR · VERBINDUNGSBERICHT|INTERNET UPTIME MONITOR · INFORME DE CONEXIÓN|INTERNET UPTIME MONITOR · RAPPORTO DI CONNESSIONE
+{} outages. {} of downtime.|{} отключений. {} простоя.|{} coupures. {} d’indisponibilité.|{} Ausfälle. {} Ausfallzeit.|{} cortes. {} sin conexión.|{} interruzioni. {} di inattività.
+Monitored time|Время наблюдения|Temps surveillé|Überwachte Zeit|Tiempo supervisado|Tempo monitorato
+Unmonitored time|Время без наблюдения|Temps non surveillé|Unüberwachte Zeit|Tiempo sin supervisión|Tempo non monitorato
+Connection availability|Доступность соединения|Disponibilité de la connexion|Verbindungsverfügbarkeit|Disponibilidad de la conexión|Disponibilità della connessione
+No monitored time|Нет времени наблюдения|Aucun temps surveillé|Keine überwachte Zeit|Sin tiempo supervisado|Nessun tempo monitorato
+Longest interruption|Самое долгое отключение|Coupure la plus longue|Längster Ausfall|Corte más largo|Interruzione più lunga
+Minimum outage length|Минимальная длительность отключения|Durée minimale d’une coupure|Minimale Ausfalldauer|Duración mínima del corte|Durata minima dell’interruzione
+Save readable report…|Сохранить текстовый отчёт…|Enregistrer le rapport texte…|Textbericht speichern…|Guardar informe de texto…|Salva rapporto testuale…
+Export CSV…|Экспорт CSV…|Exporter en CSV…|CSV exportieren…|Exportar CSV…|Esporta CSV…
+Export JSON…|Экспорт JSON…|Exporter en JSON…|JSON exportieren…|Exportar JSON…|Esporta JSON…
+Exports use UTC timestamps and include monitoring coverage. ICMP filtering can look like an outage; DNS, HTTPS, and bandwidth are not tested.|Экспорт использует время UTC и включает охват наблюдения. Фильтрация ICMP может выглядеть как отключение; DNS, HTTPS и пропускная способность не проверяются.|Les exports utilisent l’heure UTC et incluent la couverture. Le filtrage ICMP peut ressembler à une coupure ; DNS, HTTPS et le débit ne sont pas testés.|Exporte verwenden UTC und enthalten die Überwachungsabdeckung. ICMP-Filterung kann wie ein Ausfall wirken; DNS, HTTPS und Bandbreite werden nicht geprüft.|Las exportaciones usan UTC e incluyen la cobertura. El filtrado ICMP puede parecer un corte; no se prueban DNS, HTTPS ni el ancho de banda.|Le esportazioni usano UTC e includono la copertura. Il filtraggio ICMP può sembrare un’interruzione; DNS, HTTPS e larghezza di banda non vengono testati.
+Monitoring preferences|Параметры мониторинга|Préférences de surveillance|Überwachungseinstellungen|Preferencias de supervisión|Preferenze di monitoraggio
+Check interval|Интервал проверки|Intervalle de vérification|Prüfintervall|Intervalo de comprobación|Intervallo di controllo
+ seconds| секунд| secondes| Sekunden| segundos| secondi
+Response timeout|Время ожидания ответа|Délai de réponse|Antwortzeitlimit|Tiempo de espera|Tempo di attesa risposta
+Router IPv4 address|IPv4-адрес роутера|Adresse IPv4 du routeur|IPv4-Adresse des Routers|Dirección IPv4 del router|Indirizzo IPv4 del router
+Auto-detect|Определить автоматически|Détection automatique|Automatisch erkennen|Detectar automáticamente|Rileva automaticamente
+Short interruptions affect availability even when excluded from outage counts.|Короткие отключения влияют на доступность, даже если не входят в число отключений.|Les coupures courtes affectent la disponibilité même si elles ne sont pas comptabilisées.|Kurze Unterbrechungen beeinflussen die Verfügbarkeit, auch wenn sie nicht als Ausfall zählen.|Los cortes breves afectan a la disponibilidad aunque no se cuenten como cortes.|Le interruzioni brevi incidono sulla disponibilità anche quando non sono conteggiate.
+Check for updates on startup|Проверять обновления при запуске|Vérifier les mises à jour au démarrage|Beim Start nach Updates suchen|Buscar actualizaciones al iniciar|Cerca aggiornamenti all’avvio
+Also checks once a day. Downloads and installation are always your choice.|Также проверяет раз в день. Загрузка и установка — только по вашему решению.|Vérifie aussi une fois par jour. Le téléchargement et l’installation restent votre choix.|Prüft auch einmal täglich. Sie entscheiden über Download und Installation.|También comprueba una vez al día. Tú decides si descargar e instalar.|Controlla anche una volta al giorno. Download e installazione restano una tua scelta.
+Independent internet targets|Независимые узлы интернета|Cibles Internet indépendantes|Unabhängige Internetziele|Destinos independientes de Internet|Destinazioni Internet indipendenti
+Remove|Удалить|Supprimer|Entfernen|Eliminar|Rimuovi
+Add target|Добавить узел|Ajouter une cible|Ziel hinzufügen|Añadir destino|Aggiungi destinazione
+New target|Новый узел|Nouvelle cible|Neues Ziel|Nuevo destino|Nuova destinazione
+Save preferences|Сохранить параметры|Enregistrer les préférences|Einstellungen speichern|Guardar preferencias|Salva preferenze
+Preferences saved. The next check will use them.|Параметры сохранены. Они применятся при следующей проверке.|Préférences enregistrées. Elles seront utilisées au prochain test.|Einstellungen gespeichert. Sie gelten ab der nächsten Prüfung.|Preferencias guardadas. Se usarán en la próxima comprobación.|Preferenze salvate. Saranno usate dal prossimo controllo.
+Revert|Отменить изменения|Rétablir|Zurücksetzen|Revertir|Ripristina
+On this computer|На этом компьютере|Sur cet ordinateur|Auf diesem Computer|En este equipo|Su questo computer
+History folder|Папка истории|Dossier de l’historique|Verlaufsordner|Carpeta del historial|Cartella della cronologia
+Raw checks are retained for 30 days. Outages and connection intervals are retained indefinitely.|Проверки хранятся 30 дней. Отключения и интервалы соединения — бессрочно.|Les tests bruts sont conservés 30 jours. Les coupures et intervalles de connexion sont conservés sans limite.|Einzelprüfungen bleiben 30 Tage gespeichert. Ausfälle und Verbindungsintervalle bleiben unbegrenzt erhalten.|Las pruebas se conservan 30 días. Los cortes e intervalos de conexión se guardan indefinidamente.|I controlli grezzi sono conservati per 30 giorni. Interruzioni e intervalli di connessione restano a tempo indeterminato.
+Start quietly with Windows|Тихий запуск вместе с Windows|Démarrer discrètement avec Windows|Unauffällig mit Windows starten|Iniciar discretamente con Windows|Avvia discretamente con Windows
+Application updates|Обновления приложения|Mises à jour de l’application|Anwendungsupdates|Actualizaciones de la aplicación|Aggiornamenti dell’applicazione
+Installed version {} · native desktop|Установленная версия {} · приложение|Version installée {} · application native|Installierte Version {} · Desktop-Anwendung|Versión instalada {} · aplicación nativa|Versione installata {} · applicazione nativa
+Checking GitHub. Monitoring continues in the background.|Проверяем GitHub. Мониторинг продолжается в фоне.|Vérification de GitHub. La surveillance continue en arrière-plan.|GitHub wird geprüft. Die Überwachung läuft im Hintergrund weiter.|Comprobando GitHub. La supervisión continúa en segundo plano.|Controllo di GitHub. Il monitoraggio continua in background.
+Version {} is available.|Доступна версия {}.|La version {} est disponible.|Version {} ist verfügbar.|La versión {} está disponible.|È disponibile la versione {}.
+latest|новейшая|la plus récente|neueste|más reciente|più recente
+You’re up to date.|Установлена последняя версия.|Votre application est à jour.|Sie sind auf dem neuesten Stand.|Tienes la última versión.|La versione è aggiornata.
+Downloading and verifying the new executable…|Загружаем и проверяем новую версию…|Téléchargement et vérification de la nouvelle version…|Neue Programmdatei wird heruntergeladen und geprüft…|Descargando y verificando la nueva versión…|Download e verifica del nuovo eseguibile…
+Update verified. Restarting the application…|Обновление проверено. Перезапускаем приложение…|Mise à jour vérifiée. Redémarrage de l’application…|Update geprüft. Anwendung wird neu gestartet…|Actualización verificada. Reiniciando la aplicación…|Aggiornamento verificato. Riavvio dell’applicazione…
+The update check failed. Try again later.|Не удалось проверить обновления. Повторите позже.|La recherche de mises à jour a échoué. Réessayez plus tard.|Updatesuche fehlgeschlagen. Versuchen Sie es später erneut.|Falló la búsqueda de actualizaciones. Inténtalo más tarde.|Ricerca aggiornamenti non riuscita. Riprova più tardi.
+Check GitHub for the latest stable release.|Проверьте последнюю стабильную версию на GitHub.|Rechercher la dernière version stable sur GitHub.|Auf GitHub nach der neuesten stabilen Version suchen.|Busca la última versión estable en GitHub.|Cerca l’ultima versione stabile su GitHub.
+Check for updates|Проверить обновления|Rechercher des mises à jour|Nach Updates suchen|Buscar actualizaciones|Cerca aggiornamenti
+Download and install|Скачать и установить|Télécharger et installer|Herunterladen und installieren|Descargar e instalar|Scarica e installa
+Release notes|Что нового|Notes de version|Versionshinweise|Notas de la versión|Note di versione
+Last checked: {}|Последняя проверка: {}|Dernière vérification : {}|Zuletzt geprüft: {}|Última comprobación: {}|Ultimo controllo: {}
+Downloads are verified with SHA-256. Your history and preferences are preserved.|Загрузки проверяются по SHA-256. История и параметры сохраняются.|Les téléchargements sont vérifiés par SHA-256. L’historique et les préférences sont conservés.|Downloads werden mit SHA-256 geprüft. Verlauf und Einstellungen bleiben erhalten.|Las descargas se verifican con SHA-256. Se conservan el historial y las preferencias.|I download sono verificati con SHA-256. Cronologia e preferenze vengono conservate.
+No outages on the record.|Отключений не зафиксировано.|Aucune coupure enregistrée.|Keine Ausfälle aufgezeichnet.|No hay cortes registrados.|Nessuna interruzione registrata.
+Interruptions will appear here when they are observed.|Здесь появятся зафиксированные отключения.|Les coupures observées apparaîtront ici.|Beobachtete Unterbrechungen erscheinen hier.|Las interrupciones observadas aparecerán aquí.|Le interruzioni osservate appariranno qui.
+Started|Начало|Début|Beginn|Inicio|Inizio
+Duration|Длительность|Durée|Dauer|Duración|Durata
+Likely location|Вероятное место|Emplacement probable|Vermuteter Ort|Ubicación probable|Posizione probabile
+Router evidence|Данные роутера|Indices du routeur|Routerdaten|Datos del router|Dati del router
+Status|Состояние|État|Status|Estado|Stato
+Mixed evidence|Смешанные данные|Indices mixtes|Gemischte Hinweise|Datos mixtos|Dati misti
+Undetermined|Не определено|Indéterminé|Unbestimmt|Sin determinar|Indeterminato
+Responded|Ответ получен|A répondu|Hat geantwortet|Respondió|Ha risposto
+Changed|Менялось|A changé|Geändert|Cambió|Variato
+Recovered|Восстановлено|Rétabli|Wiederhergestellt|Restablecido|Ripristinato
+Ongoing|Продолжается|En cours|Andauernd|En curso|In corso
+Observation ended|Наблюдение завершено|Observation terminée|Beobachtung beendet|Observación finalizada|Osservazione terminata
+Could not load history: {}|Не удалось загрузить историю: {}|Impossible de charger l’historique : {}|Verlauf konnte nicht geladen werden: {}|No se pudo cargar el historial: {}|Impossibile caricare la cronologia: {}
+Your internet, on record.|Ваш интернет под наблюдением.|Votre connexion, documentée.|Ihre Verbindung, dokumentiert.|Tu conexión, documentada.|La tua connessione, documentata.
+Every disconnect, documented.|Каждое отключение зафиксировано.|Chaque coupure, documentée.|Jede Unterbrechung dokumentiert.|Cada desconexión, documentada.|Ogni disconnessione, documentata.
+A clear story. Ready to share.|Наглядный отчёт. Готов к отправке.|Un bilan clair. Prêt à partager.|Ein klarer Bericht. Bereit zum Teilen.|Un informe claro. Listo para compartir.|Un resoconto chiaro. Pronto da condividere.
+Make yourself comfortable.|Настройте под себя.|Personnalisez votre expérience.|Richten Sie es sich ein.|Configúralo a tu gusto.|Personalizza l’esperienza.
+Quiet monitoring · no session limit|Тихий мониторинг · без ограничения сессии|Surveillance discrète · sans limite de session|Unauffällige Überwachung · ohne Sitzungslimit|Supervisión discreta · sin límite de sesión|Monitoraggio discreto · senza limiti di sessione
+Resume|Возобновить|Reprendre|Fortsetzen|Reanudar|Riprendi
+Pause|Приостановить|Mettre en pause|Pausieren|Pausar|Pausa
+DEMO DATA — not real measurements|ДЕМО — не реальные измерения|DONNÉES DE DÉMONSTRATION — mesures fictives|DEMODATEN — keine echten Messungen|DATOS DE DEMOSTRACIÓN — mediciones ficticias|DATI DIMOSTRATIVI — misure non reali
+Dismiss|Скрыть|Fermer|Schließen|Cerrar|Chiudi
+A new version is available.|Доступна новая версия.|Une nouvelle version est disponible.|Eine neue Version ist verfügbar.|Hay una nueva versión disponible.|È disponibile una nuova versione.
+View update|Открыть обновление|Voir la mise à jour|Update anzeigen|Ver actualización|Mostra aggiornamento
+Appearance and language|Оформление и язык|Apparence et langue|Darstellung und Sprache|Apariencia e idioma|Aspetto e lingua
+Language|Язык|Langue|Sprache|Idioma|Lingua
+Theme|Тема|Thème|Design|Tema|Tema
+Light|Светлая|Clair|Hell|Claro|Chiaro
+Dark|Тёмная|Sombre|Dunkel|Oscuro|Scuro
+Applied immediately and saved automatically.|Применяется сразу и сохраняется автоматически.|Appliqué immédiatement et enregistré automatiquement.|Wird sofort angewendet und automatisch gespeichert.|Se aplica al instante y se guarda automáticamente.|Applicato subito e salvato automaticamente.
+Open monitor|Открыть монитор|Ouvrir le moniteur|Monitor öffnen|Abrir monitor|Apri monitor
+Resume monitoring|Возобновить мониторинг|Reprendre la surveillance|Überwachung fortsetzen|Reanudar supervisión|Riprendi monitoraggio
+Pause monitoring|Приостановить мониторинг|Mettre la surveillance en pause|Überwachung pausieren|Pausar supervisión|Sospendi monitoraggio
+Start with Windows|Запускать вместе с Windows|Démarrer avec Windows|Mit Windows starten|Iniciar con Windows|Avvia con Windows
+Demo preview|Демонстрация|Aperçu de démonstration|Demovorschau|Vista de demostración|Anteprima dimostrativa
+Paused|Приостановлено|En pause|Pausiert|En pausa|In pausa
+Connected|Подключено|Connecté|Verbunden|Conectado|Connesso
+Check needs attention|Проверка требует внимания|Vérification à examiner|Prüfung erfordert Aufmerksamkeit|La comprobación requiere atención|Il controllo richiede attenzione
+Connection interrupted|Соединение прервано|Connexion interrompue|Verbindung unterbrochen|Conexión interrumpida|Connessione interrotta
+Checking connection|Проверка соединения|Vérification de la connexion|Verbindung wird geprüft|Comprobando conexión|Controllo della connessione
+Click to open|Нажмите, чтобы открыть|Cliquer pour ouvrir|Zum Öffnen klicken|Haz clic para abrir|Fai clic per aprire
+Check interval must be 2–300 seconds.|Интервал проверки должен составлять 2–300 секунд.|L’intervalle doit être compris entre 2 et 300 secondes.|Das Prüfintervall muss 2–300 Sekunden betragen.|El intervalo debe ser de 2 a 300 segundos.|L’intervallo deve essere di 2–300 secondi.
+Response timeout must be 200–5000 ms.|Время ожидания должно составлять 200–5000 мс.|Le délai doit être compris entre 200 et 5000 ms.|Das Antwortzeitlimit muss 200–5000 ms betragen.|El tiempo de espera debe ser de 200 a 5000 ms.|Il tempo di attesa deve essere di 200–5000 ms.
+Response timeout must be shorter than the check interval.|Время ожидания должно быть короче интервала проверки.|Le délai de réponse doit être inférieur à l’intervalle de vérification.|Das Antwortzeitlimit muss kürzer als das Prüfintervall sein.|El tiempo de espera debe ser menor que el intervalo de comprobación.|Il tempo di attesa deve essere inferiore all’intervallo di controllo.
+Minimum outage length must be 0–300 seconds.|Минимальная длительность отключения должна составлять 0–300 секунд.|La durée minimale d’une coupure doit être comprise entre 0 et 300 secondes.|Die minimale Ausfalldauer muss 0–300 Sekunden betragen.|La duración mínima debe ser de 0 a 300 segundos.|La durata minima deve essere di 0–300 secondi.
+Use two to five independent public targets.|Используйте от двух до пяти независимых внешних узлов.|Utilisez deux à cinq cibles publiques indépendantes.|Verwenden Sie zwei bis fünf unabhängige öffentliche Ziele.|Usa de dos a cinco destinos públicos independientes.|Usa da due a cinque destinazioni pubbliche indipendenti.
+Target names must contain 1–40 characters.|Названия узлов должны содержать 1–40 символов.|Les noms des cibles doivent contenir de 1 à 40 caractères.|Zielnamen müssen 1–40 Zeichen enthalten.|Los nombres deben tener de 1 a 40 caracteres.|I nomi devono contenere da 1 a 40 caratteri.
+Internet targets must use different IPv4 addresses.|Узлы должны использовать разные IPv4-адреса.|Les cibles doivent utiliser des adresses IPv4 différentes.|Internetziele müssen verschiedene IPv4-Adressen verwenden.|Los destinos deben usar direcciones IPv4 diferentes.|Le destinazioni devono usare indirizzi IPv4 diversi.
+Use a valid IPv4 address, such as 192.168.1.1.|Введите корректный IPv4-адрес, например 192.168.1.1.|Utilisez une adresse IPv4 valide, par exemple 192.168.1.1.|Verwenden Sie eine gültige IPv4-Adresse, z. B. 192.168.1.1.|Usa una dirección IPv4 válida, como 192.168.1.1.|Usa un indirizzo IPv4 valido, come 192.168.1.1.
+Use a reachable unicast IPv4 address.|Введите доступный одноадресный IPv4-адрес.|Utilisez une adresse IPv4 unicast accessible.|Verwenden Sie eine erreichbare Unicast-IPv4-Adresse.|Usa una dirección IPv4 unicast accesible.|Usa un indirizzo IPv4 unicast raggiungibile.
+A probe could not run. Check ICMP permissions and your targets.|Не удалось выполнить проверку. Проверьте разрешения ICMP и адреса узлов.|Un test n’a pas pu être exécuté. Vérifiez les autorisations ICMP et les cibles.|Eine Prüfung konnte nicht ausgeführt werden. Prüfen Sie ICMP-Berechtigungen und Ziele.|No se pudo ejecutar una prueba. Revisa los permisos ICMP y los destinos.|Impossibile eseguire un controllo. Verifica autorizzazioni ICMP e destinazioni.
+Could not save the check:|Не удалось сохранить проверку:|Impossible d’enregistrer le test :|Prüfung konnte nicht gespeichert werden:|No se pudo guardar la prueba:|Impossibile salvare il controllo:
+Tray unavailable:|Трей недоступен:|Zone de notification indisponible :|Infobereich nicht verfügbar:|Área de notificación no disponible:|Area di notifica non disponibile:
+Update failed:|Обновление не удалось:|Échec de la mise à jour :|Update fehlgeschlagen:|Falló la actualización:|Aggiornamento non riuscito:
+An update operation is already in progress.|Обновление уже выполняется.|Une opération de mise à jour est déjà en cours.|Ein Updatevorgang läuft bereits.|Ya hay una actualización en curso.|È già in corso un aggiornamento.
+Updates cannot be installed from demo mode.|Обновления недоступны в деморежиме.|Les mises à jour ne peuvent pas être installées en mode démo.|Updates können im Demomodus nicht installiert werden.|No se pueden instalar actualizaciones en modo de demostración.|Non è possibile installare aggiornamenti in modalità demo.
+Check for a newer release first.|Сначала проверьте обновления.|Recherchez d’abord une nouvelle version.|Suchen Sie zuerst nach einer neueren Version.|Busca primero una versión nueva.|Cerca prima una versione più recente.
+Preferences could not be saved: {}|Не удалось сохранить параметры: {}|Impossible d’enregistrer les préférences : {}|Einstellungen konnten nicht gespeichert werden: {}|No se pudieron guardar las preferencias: {}|Impossibile salvare le preferenze: {}
+{}s|{} с|{} s|{} s|{} s|{} s
+{}m {}s|{} мин {} с|{} min {} s|{} min {} s|{} min {} s|{} min {} s
+{}h {}m|{} ч {} мин|{} h {} min|{} h {} min|{} h {} min|{} h {} min
+ ms| мс| ms| ms| ms| ms
+{} ms|{} мс|{} ms|{} ms|{} ms|{} ms
+Local ICMP observations|Локальные наблюдения ICMP|Observations ICMP locales|Lokale ICMP-Beobachtungen|Observaciones ICMP locales|Osservazioni ICMP locali
+Period (UTC)|Период (UTC)|Période (UTC)|Zeitraum (UTC)|Período (UTC)|Periodo (UTC)
+Outage threshold|Порог отключения|Seuil de coupure|Ausfallschwelle|Umbral de corte|Soglia di interruzione
+Availability includes shorter interruptions.|Доступность учитывает и более короткие отключения.|La disponibilité inclut les coupures plus courtes.|Die Verfügbarkeit berücksichtigt auch kürzere Unterbrechungen.|La disponibilidad incluye cortes más breves.|La disponibilità include le interruzioni più brevi.
+Started (UTC)|Начало (UTC)|Début (UTC)|Beginn (UTC)|Inicio (UTC)|Inizio (UTC)
+Ended (UTC)|Окончание (UTC)|Fin (UTC)|Ende (UTC)|Fin (UTC)|Fine (UTC)
+Seconds in period|Секунды за период|Secondes dans la période|Sekunden im Zeitraum|Segundos en el período|Secondi nel periodo
+Evidence|Наблюдения|Indices|Hinweise|Datos|Dati
+Internet unreachable; router responded|Интернет недоступен; роутер ответил|Internet inaccessible ; le routeur répond|Internet nicht erreichbar; Router antwortet|Internet inaccesible; el router respondió|Internet non raggiungibile; il router risponde
+Internet and router unreachable|Интернет и роутер недоступны|Internet et routeur inaccessibles|Internet und Router nicht erreichbar|Internet y router inaccesibles|Internet e router non raggiungibili
+Router reachability changed during the outage|Доступность роутера менялась во время отключения|L’état du routeur a changé pendant la coupure|Router-Erreichbarkeit änderte sich während des Ausfalls|La respuesta del router cambió durante el corte|La raggiungibilità del router è cambiata durante l’interruzione
+Internet unreachable; router status unknown|Интернет недоступен; состояние роутера неизвестно|Internet inaccessible ; état du routeur inconnu|Internet nicht erreichbar; Routerstatus unbekannt|Internet inaccesible; estado del router desconocido|Internet non raggiungibile; stato del router sconosciuto
+A responding router does not prove ISP responsibility.|Ответ роутера не доказывает ответственность провайдера.|La réponse du routeur ne prouve pas la responsabilité du fournisseur.|Ein antwortender Router beweist keine Verantwortung des Anbieters.|La respuesta del router no prueba la responsabilidad del proveedor.|La risposta del router non prova la responsabilità del provider.
+Times and durations are approximate to the sampling interval. Sleep, pauses, and stopped monitoring are unmonitored.|Время и длительность приблизительны в пределах интервала проверки. Сон, паузы и остановка мониторинга не учитываются как время наблюдения.|Les horaires et durées sont approximatifs selon l’intervalle de test. Veille, pauses et arrêts ne sont pas surveillés.|Zeitangaben und Dauer sind auf das Prüfintervall genau. Ruhezustand, Pausen und gestoppte Überwachung sind unbeobachtet.|Los tiempos y duraciones son aproximados según el intervalo. La suspensión, las pausas y las paradas quedan sin supervisión.|Tempi e durate sono approssimati all’intervallo di controllo. Sospensione, pause e arresti non sono monitorati.
+No gateway detected. Set your router address in Settings.|Шлюз не обнаружен. Укажите адрес роутера в настройках.|Aucune passerelle détectée. Indiquez l’adresse du routeur dans les paramètres.|Kein Gateway erkannt. Geben Sie die Routeradresse in den Einstellungen an.|No se detectó la puerta de enlace. Indica la dirección del router en Ajustes.|Nessun gateway rilevato. Imposta l’indirizzo del router nelle impostazioni.
+No reply ({})|Нет ответа ({})|Aucune réponse ({})|Keine Antwort ({})|Sin respuesta ({})|Nessuna risposta ({})
+Cannot open the Windows ICMP driver ({})|Не удалось открыть драйвер ICMP Windows ({})|Impossible d’ouvrir le pilote ICMP Windows ({})|Windows-ICMP-Treiber konnte nicht geöffnet werden ({})|No se pudo abrir el controlador ICMP de Windows ({})|Impossibile aprire il driver ICMP di Windows ({})
+Windows could not execute the ICMP probe ({})|Windows не удалось выполнить проверку ICMP ({})|Windows n’a pas pu exécuter le test ICMP ({})|Windows konnte die ICMP-Prüfung nicht ausführen ({})|Windows no pudo ejecutar la prueba ICMP ({})|Windows non ha potuto eseguire il controllo ICMP ({})
+Could not execute ping:|Не удалось выполнить ping:|Impossible d’exécuter ping :|Ping konnte nicht ausgeführt werden:|No se pudo ejecutar ping:|Impossibile eseguire ping:

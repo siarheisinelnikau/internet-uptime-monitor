@@ -1,7 +1,7 @@
 //! A small native Windows message loop; no webview or GUI runtime is bundled.
 #[cfg(windows)]
 mod windows {
-    use crate::{monitor::App, platform};
+    use crate::{i18n::tr, monitor::App, platform};
     use anyhow::{Result, bail};
     use std::{path::PathBuf, ptr, sync::Arc, thread, time::Duration};
     use windows_sys::Win32::{
@@ -37,21 +37,23 @@ mod windows {
                     return 0;
                 }
                 if message == CALLBACK {
+                    let language = context.app.snapshot().config.language;
+                    let t = |key| tr(language, key);
                     match lparam as u32 {
                         WM_LBUTTONUP | WM_LBUTTONDBLCLK => {
                             context.app.request_window();
                         }
                         WM_RBUTTONUP | WM_CONTEXTMENU => {
                             let menu = CreatePopupMenu();
-                            AppendMenuW(menu, MF_STRING, 1001, wide("Open monitor").as_ptr());
+                            AppendMenuW(menu, MF_STRING, 1001, wide(t("Open monitor")).as_ptr());
                             AppendMenuW(
                                 menu,
                                 MF_STRING,
                                 1002,
                                 wide(if context.app.snapshot().paused {
-                                    "Resume monitoring"
+                                    t("Resume monitoring")
                                 } else {
-                                    "Pause monitoring"
+                                    t("Pause monitoring")
                                 })
                                 .as_ptr(),
                             );
@@ -65,11 +67,11 @@ mod windows {
                                             0
                                         },
                                     1003,
-                                    wide("Start with Windows").as_ptr(),
+                                    wide(t("Start with Windows")).as_ptr(),
                                 );
                             }
                             AppendMenuW(menu, MF_SEPARATOR, 0, ptr::null());
-                            AppendMenuW(menu, MF_STRING, 1004, wide("Quit monitor").as_ptr());
+                            AppendMenuW(menu, MF_STRING, 1004, wide(t("Quit monitor")).as_ptr());
                             let mut point = POINT::default();
                             GetCursorPos(&mut point);
                             SetForegroundWindow(window);
@@ -175,7 +177,10 @@ mod windows {
                 DestroyWindow(window);
                 bail!("Could not load the packaged tray icon.");
             }
-            let tip = wide("Internet Uptime Monitor — click to open");
+            let tip = wide(&format!(
+                "Internet Uptime Monitor — {}",
+                tr(app.snapshot().config.language, "Click to open")
+            ));
             icon.szTip[..tip.len()].copy_from_slice(&tip);
             let taskbar_created = RegisterWindowMessageW(wide("TaskbarCreated").as_ptr());
             let mut context = Box::new(Context {
@@ -208,20 +213,21 @@ mod windows {
                     DispatchMessageW(&message);
                 }
                 let status = app.snapshot();
+                let t = |key| tr(status.config.language, key);
                 let label = if status.demo {
-                    "Demo preview"
+                    t("Demo preview")
                 } else if status.paused {
-                    "Paused"
+                    t("Paused")
                 } else {
                     status
                         .latest
                         .as_ref()
                         .map(|s| match s.state {
-                            crate::model::State::Online => "Connected",
-                            crate::model::State::Unknown => "Check needs attention",
-                            _ => "Connection interrupted",
+                            crate::model::State::Online => t("Connected"),
+                            crate::model::State::Unknown => t("Check needs attention"),
+                            _ => t("Connection interrupted"),
                         })
-                        .unwrap_or("Checking connection")
+                        .unwrap_or(t("Checking connection"))
                 };
                 if last_tip != label {
                     last_tip = label.into();

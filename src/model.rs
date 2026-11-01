@@ -20,6 +20,8 @@ pub struct Target {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
+    pub language: crate::i18n::Language,
+    pub theme: crate::i18n::Theme,
     pub check_updates_automatically: bool,
     pub interval_seconds: u32,
     pub timeout_ms: u32,
@@ -31,6 +33,8 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            language: crate::i18n::Language::English,
+            theme: crate::i18n::Theme::Light,
             check_updates_automatically: true,
             interval_seconds: 5,
             timeout_ms: 1000,
@@ -182,6 +186,19 @@ pub struct Status {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn legacy_preferences_keep_monitoring_settings_and_default_appearance() {
+        let config: Config = serde_json::from_str(r#"{"interval_seconds":17,"check_updates_automatically":false,"router":"192.168.1.254"}"#).unwrap();
+        assert_eq!(config.language, crate::i18n::Language::English);
+        assert_eq!(config.theme, crate::i18n::Theme::Light);
+        assert_eq!(config.interval_seconds, 17);
+        assert!(!config.check_updates_automatically);
+        assert_eq!(config.router, "192.168.1.254");
+        let future: Config =
+            serde_json::from_str(r#"{"language":"unsupported","theme":"unsupported"}"#).unwrap();
+        assert_eq!(future.language, crate::i18n::Language::English);
+        assert_eq!(future.theme, crate::i18n::Theme::Light);
+    }
     fn probe(ok: Option<bool>) -> Probe {
         Probe {
             ok,

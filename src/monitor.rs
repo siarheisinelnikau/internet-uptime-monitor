@@ -74,6 +74,27 @@ impl App {
         self.refresh_ui();
         Ok(())
     }
+    /// Appearance changes preserve the active observation and pending monitoring edits.
+    pub fn set_appearance(
+        &self,
+        language: crate::i18n::Language,
+        theme: crate::i18n::Theme,
+    ) -> Result<()> {
+        let mut status = self.status.lock().expect("status lock");
+        let mut config = status.config.clone();
+        config.language = language;
+        config.theme = theme;
+        if !status.demo {
+            self.store
+                .lock()
+                .expect("store lock")
+                .save_config(&config)?;
+        }
+        status.config = config;
+        drop(status);
+        self.refresh_ui();
+        Ok(())
+    }
     pub fn control(&self, action: &str) -> Result<()> {
         let mut status = self.status.lock().expect("status lock");
         if status.demo {
@@ -282,5 +303,20 @@ mod tests {
         app.configure(config.clone()).unwrap();
         assert_eq!(app.store.lock().unwrap().config().unwrap(), config);
         assert!(app.control("invalid").is_err());
+    }
+    #[test]
+    fn appearance_persists_without_resetting_observation_or_monitoring_state() {
+        let app = App::new(Store::memory().unwrap(), false).unwrap();
+        app.control("pause").unwrap();
+        let generation = app.snapshot().generation;
+        app.set_appearance(crate::i18n::Language::Russian, crate::i18n::Theme::Dark)
+            .unwrap();
+        let status = app.snapshot();
+        assert!(status.paused);
+        assert_eq!(status.generation, generation);
+        assert_eq!(status.config.interval_seconds, 5);
+        let persisted = app.store.lock().unwrap().config().unwrap();
+        assert_eq!(persisted.language, crate::i18n::Language::Russian);
+        assert_eq!(persisted.theme, crate::i18n::Theme::Dark);
     }
 }
