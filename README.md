@@ -7,13 +7,14 @@ your router separately from the internet, and produces a clear report:
 **“12 outages. 8 minutes of downtime.”**
 
 One Windows EXE. No installer, browser dashboard, WebView runtime, account,
-subscription, or session limit. The interface and reports are in English.
+subscription, or session limit. The interface and readable reports support English, Russian, French, German, Spanish,
+and Italian. CSV and JSON keep stable English field names for interoperability.
 
 ![Native desktop application showing labeled demo data](docs/screenshots/overview.png)
 
 ## Run it
 
-Download `InternetUptimeMonitor-v0.2.2.exe` from
+Download `InternetUptimeMonitor-v0.3.0.exe` from
 [GitHub Releases](https://github.com/siarheisinelnikau/internet-uptime-monitor/releases/latest)
 and double-click it. Its native desktop window opens immediately.
 
@@ -56,6 +57,21 @@ target; the EXE is unsigned. Linux and macOS source builds are also tested.
 - **Updates:** GitHub checks, verified downloads, automatic restart, and
   recovery if the updated executable fails to start.
 
+### Language and appearance
+
+Open **Settings → Appearance and language**. Choose **English**, **Русский**,
+**Français**, **Deutsch**, **Español**, or **Italiano**, then select **Light** or
+**Dark**. Both choices apply immediately and are saved automatically. They do not
+restart monitoring or discard unsaved monitoring preferences. English and Light
+remain the defaults when upgrading older settings. Demo appearance choices last
+only for that isolated preview.
+
+Navigation, connection status, outage history, reports, settings, update controls,
+and tray menus follow the chosen language. Technical OS/network diagnostics,
+addresses, user-entered target names, and CSV/JSON keys retain their original data.
+Times in the interface use the local timezone in an unambiguous numeric format;
+exports use UTC.
+
 ### Updates
 
 Open **Settings → Application updates → Check for updates**. Choose
@@ -86,9 +102,9 @@ future in-app updates.
 ### Portable and background operation
 
 ```powershell
-.\InternetUptimeMonitor-v0.2.2.exe --portable
-.\InternetUptimeMonitor-v0.2.2.exe --background
-.\InternetUptimeMonitor-v0.2.2.exe --stop
+.\InternetUptimeMonitor-v0.3.0.exe --portable
+.\InternetUptimeMonitor-v0.3.0.exe --background
+.\InternetUptimeMonitor-v0.3.0.exe --stop
 ```
 
 Portable mode creates a `data` directory beside the EXE. Otherwise the Windows
@@ -98,8 +114,8 @@ naturally creates a database; single EXE describes the distributed application.
 Enable **Start quietly with Windows** in Settings or the tray menu, or use:
 
 ```powershell
-.\InternetUptimeMonitor-v0.2.2.exe --enable-startup
-.\InternetUptimeMonitor-v0.2.2.exe --disable-startup
+.\InternetUptimeMonitor-v0.3.0.exe --enable-startup
+.\InternetUptimeMonitor-v0.3.0.exe --disable-startup
 ```
 
 Startup is opt-in. Only the current user's `InternetUptimeMonitor` value in
@@ -205,7 +221,9 @@ cargo build --locked --release
 ```
 
 The Windows UI renders egui on the CPU and presents through GDI, without OpenGL
-or DirectX. Linux and macOS use egui/eframe with Glow. Tests cover outage accounting,
+or DirectX. Linux and macOS use egui/eframe with Glow. Tests cover catalog completeness and placeholder preservation, legacy preference
+migration, saved appearance without resetting monitoring, readable-report localization,
+outage accounting,
 SQLite recovery, update integrity, native IPC, occupied ports, duplicate launches,
 and graceful shutdown. CI runs on Windows, Linux, and macOS. Changing
 `docs/release-notes.md` on `main`, or pushing a matching `v*` tag, runs the Windows
@@ -215,7 +233,7 @@ release workflow. It publishes `InternetUptimeMonitor-vVERSION.exe` and
 On an interactive Windows desktop, also run the real-window regression:
 
 ```powershell
-$env:UPTIME_GUI_EXE = (Resolve-Path .\dist\InternetUptimeMonitor-v0.2.2.exe)
+$env:UPTIME_GUI_EXE = (Resolve-Path .\dist\InternetUptimeMonitor-v0.3.0.exe)
 cargo test --locked --test tray_lifecycle -- --ignored --nocapture
 ```
 
@@ -224,6 +242,23 @@ minimization, and duplicate launches, plus continued recording and hidden shutdo
 It also measures idle CPU with the window visible, hidden, and restored to catch
 event-loop busy polling.
 It complements a manual tray menu and foreground-focus check.
+
+To capture a real application client area without desktop input, build with
+`cargo build --locked --release --features screenshots` and run an isolated demo:
+
+```powershell
+$env:UPTIME_SCREENSHOT_TO = "C:/Temp/uptime-settings-ru-dark.png"
+$env:UPTIME_SCREENSHOT_VIEW = "settings" # overview, history, reports, settings
+$env:UPTIME_SCREENSHOT_LANGUAGE = "ru" # en, ru, fr, de, es, it
+$env:UPTIME_SCREENSHOT_THEME = "dark" # light, dark
+.\target\release\internet-uptime-monitor.exe --demo --no-tray --data-dir C:/Temp/uptime-capture
+```
+
+Capture requires `--demo --no-tray`, never probes or installs updates, saves the
+CPU-rendered client area after its finite initialization frames, and exits. Use a
+fresh isolated data directory and an external timeout; clear the screenshot
+environment variables before ordinary launches. This does not establish OS menu,
+tray interaction, keyboard traversal, or normal idle/hidden performance.
 
 Set `UPTIME_RENDER_TRACE` to a local `.jsonl` path before launching to record
 frame timings, including CPU rendering and GDI presentation. Tracing is off by default.

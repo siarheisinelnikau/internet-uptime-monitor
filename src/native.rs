@@ -28,6 +28,10 @@ const RED: Color32 = Color32::from_rgb(190, 106, 102);
 const LINE: Color32 = Color32::from_rgb(226, 233, 221);
 
 fn apply_theme(context: &egui::Context, theme: Theme) {
+    context.all_styles_mut(|style| {
+        style.spacing.item_spacing = Vec2::new(12.0, 12.0);
+        style.spacing.button_padding = Vec2::new(14.0, 9.0);
+    });
     context.set_theme(if theme == Theme::Dark {
         egui::ThemePreference::Dark
     } else {
@@ -66,6 +70,24 @@ fn state_label(language: Language, state: &str) -> &'static str {
             _ => "Undetermined",
         },
     )
+}
+
+fn status_text(ui: &egui::Ui, color: Color32) -> Color32 {
+    if ui.visuals().dark_mode {
+        if color == RED {
+            Color32::from_rgb(225, 145, 138)
+        } else {
+            color
+        }
+    } else if color == GREEN {
+        Color32::from_rgb(64, 105, 43)
+    } else if color == ORANGE {
+        Color32::from_rgb(143, 86, 36)
+    } else if color == RED {
+        Color32::from_rgb(173, 73, 68)
+    } else {
+        color
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -195,10 +217,6 @@ impl NativeApp {
         let config = app.snapshot().config;
         let language = config.language;
         apply_theme(context, config.theme);
-        let mut style = (*context.style()).clone();
-        style.spacing.item_spacing = Vec2::new(12.0, 12.0);
-        style.spacing.button_padding = Vec2::new(14.0, 9.0);
-        context.set_style(style);
         let ctx = context.clone();
         app.set_ui_waker(Box::new(move |show| {
             if show {
@@ -240,7 +258,10 @@ impl NativeApp {
                 &[(error).to_string()],
             ));
         }
-        if native.app.window_visible.load(Ordering::Acquire) {
+        if native.app.window_visible.load(Ordering::Acquire)
+            && !(cfg!(feature = "screenshots")
+                && std::env::var_os("UPTIME_SCREENSHOT_TO").is_some())
+        {
             native.app.request_window();
         }
         native.refresh(context);
@@ -580,7 +601,11 @@ impl NativeApp {
                         let (rect, _) =
                             ui.allocate_exact_size(Vec2::splat(6.0), egui::Sense::hover());
                         ui.painter().circle_filled(rect.center(), 3.0, color);
-                        ui.label(RichText::new(label).size(11.0).color(color));
+                        ui.label(
+                            RichText::new(label)
+                                .size(11.0)
+                                .color(status_text(ui, color)),
+                        );
                     });
                 }
             });
@@ -719,7 +744,7 @@ impl NativeApp {
                     ui,
                     translate_message(
                         language,
-                        "{} checks in this period",
+                        "Checks in this period: {}",
                         &[(report.check_count).to_string()],
                     ),
                 );
@@ -772,7 +797,7 @@ impl NativeApp {
             card(ui).show(ui, |ui| {
                 ui.heading(translate_message(
                     language,
-                    "{} outages · {} of downtime",
+                    "Outages: {} · Downtime: {}",
                     &[
                         (report.outage_count).to_string(),
                         (duration(report.downtime_seconds, language)).to_string(),
@@ -804,7 +829,7 @@ impl NativeApp {
                 ui.label(
                     RichText::new(translate_message(
                         language,
-                        "{} outages. {} of downtime.",
+                        "Outages: {}. Downtime: {}.",
                         &[
                             (report.outage_count).to_string(),
                             (duration(report.downtime_seconds, language)).to_string(),
@@ -883,7 +908,8 @@ impl NativeApp {
         self.appearance(ui);
         ui.add_space(16.0);
         let demo = self.app.snapshot().demo;
-        ui.columns(2,|columns| {
+        let columns_count = if ui.available_width() < 850.0 { 1 } else { 2 };
+        ui.columns(columns_count,|columns| {
         {
         let ui=&mut columns[0];
         card(ui).show(ui,|ui| {ui.heading(t("Monitoring preferences"));ui.add_space(10.0);ui.add_enabled_ui(!demo,|ui| {
@@ -902,7 +928,8 @@ impl NativeApp {
             if ui.button(t("Revert")).clicked() {self.config=self.app.snapshot().config;}});
         });});
         }
-        let ui=&mut columns[1];
+        let ui = if columns_count == 2 { &mut columns[1] } else { &mut columns[0] };
+        if columns_count == 1 { ui.add_space(16.0); }
         self.updates(ui);
         ui.add_space(16.0);
         card(ui).show(ui,|ui| {ui.heading(t("On this computer"));muted(ui,t("History folder")); ui.add(egui::Label::new(self.data.display().to_string()).truncate()).on_hover_text(self.data.display().to_string());muted(ui,t("Raw checks are retained for 30 days. Outages and connection intervals are retained indefinitely."));
@@ -1069,7 +1096,7 @@ fn outage_table(
                 ui.label(timestamp(event.started_at));
                 ui.strong(duration(event.duration_seconds, language));
                 ui.colored_label(
-                    state_color(&event.cause),
+                    status_text(ui, state_color(&event.cause)),
                     match event.cause.as_str() {
                         "upstream" => t("Internet issue"),
                         "local" => t("Local network"),
@@ -1227,7 +1254,10 @@ impl NativeApp {
                         self.notice = Some(diagnostic(language, &error.to_string()));
                     }
                     if status.demo {
-                        ui.colored_label(ORANGE, t("DEMO DATA — not real measurements"));
+                        ui.colored_label(
+                            status_text(ui, ORANGE),
+                            t("DEMO DATA — not real measurements"),
+                        );
                     }
                 });
                 ui.add_space(16.0);
@@ -1242,15 +1272,7 @@ impl NativeApp {
                         .corner_radius(5)
                         .show(ui, |ui| {
                             ui.horizontal_wrapped(|ui| {
-                                ui.label(if update.phase == "error" {
-                                    format!(
-                                        "{}\n{}",
-                                        t("The update check failed. Try again later."),
-                                        diagnostic(language, &message)
-                                    )
-                                } else {
-                                    message
-                                });
+                                ui.label(diagnostic(language, &message));
                                 if ui.small_button(t("Dismiss")).clicked() {
                                     self.notice = None;
                                 }
@@ -1259,7 +1281,7 @@ impl NativeApp {
                     ui.add_space(12.0);
                 }
                 if let Some(error) = status.error {
-                    ui.colored_label(RED, diagnostic(language, &error));
+                    ui.colored_label(status_text(ui, RED), diagnostic(language, &error));
                 }
                 if self.app.updates.snapshot().phase == "available" && self.view != View::Settings {
                     ui.horizontal(|ui| {
@@ -1326,6 +1348,26 @@ pub fn run(app: Arc<App>, instance: Arc<Instance>, data: PathBuf, hidden: bool) 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn theme_switch_keeps_geometry_and_overrides_system_appearance() {
+        let context = egui::Context::default();
+        for theme in [Theme::Light, Theme::Dark, Theme::Light, Theme::Dark] {
+            apply_theme(&context, theme);
+            let input = egui::RawInput {
+                system_theme: Some(if theme == Theme::Light {
+                    egui::Theme::Dark
+                } else {
+                    egui::Theme::Light
+                }),
+                ..Default::default()
+            };
+            let _ = context.run(input, |context| {
+                assert_eq!(context.style().visuals.dark_mode, theme == Theme::Dark);
+                assert_eq!(context.style().spacing.item_spacing, Vec2::new(12.0, 12.0));
+                assert_eq!(context.style().spacing.button_padding, Vec2::new(14.0, 9.0));
+            });
+        }
+    }
     #[test]
     fn native_report_periods_are_valid() {
         for period in [Period::Today, Period::Week, Period::Month] {

@@ -110,3 +110,25 @@ pub fn csv_report(report: &Report, demo: bool) -> String {
     }
     text
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn readable_reports_follow_language_while_csv_retains_interoperable_keys() {
+        let mut store = crate::storage::Store::memory().unwrap();
+        crate::monitor::seed_demo(&mut store).unwrap();
+        let report = store
+            .report(crate::model::now() - 86400.0, crate::model::now(), 5, 0)
+            .unwrap();
+        let russian = text_report_localized(&report, true, crate::i18n::Language::Russian);
+        assert!(russian.contains("ОТЧЁТ О СОЕДИНЕНИИ"));
+        assert!(russian.contains("ДЕМО — не реальные измерения"));
+        assert!(!russian.contains("Internet unreachable; router responded"));
+        assert!(
+            csv_report(&report, true)
+                .starts_with("started_utc,ended_utc,seconds_in_period,status,evidence,demo")
+        );
+        assert!(text_report(&report, true).contains("CONNECTION REPORT"));
+    }
+}

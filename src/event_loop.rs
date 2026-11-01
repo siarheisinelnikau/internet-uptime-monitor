@@ -63,6 +63,10 @@ impl SoftwareApp {
             event_loop.create_window(
                 Window::default_attributes()
                     .with_title("Internet Uptime Monitor")
+                    .with_active(
+                        !(cfg!(feature = "screenshots")
+                            && std::env::var_os("UPTIME_SCREENSHOT_TO").is_some()),
+                    )
                     .with_inner_size(LogicalSize::new(1160.0, 890.0))
                     .with_min_inner_size(LogicalSize::new(850.0, 620.0))
                     .with_visible(self.monitor.window_visible.load(Ordering::Acquire))

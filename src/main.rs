@@ -128,6 +128,41 @@ fn run() -> Result<i32> {
         return Ok(0);
     }
     let options = Options::parse()?;
+    #[cfg(feature = "screenshots")]
+    let capture_appearance = if std::env::var_os("UPTIME_SCREENSHOT_TO").is_some() {
+        anyhow::ensure!(
+            options.demo && options.no_tray && std::env::args_os().any(|arg| arg == "--data-dir"),
+            "Screenshot capture requires --demo --no-tray and an isolated --data-dir."
+        );
+        let view = std::env::var("UPTIME_SCREENSHOT_VIEW").unwrap_or_else(|_| "overview".into());
+        anyhow::ensure!(
+            ["overview", "history", "reports", "settings"].contains(&view.as_str()),
+            "Unknown screenshot view: {view}"
+        );
+        let language = match std::env::var("UPTIME_SCREENSHOT_LANGUAGE")
+            .as_deref()
+            .unwrap_or("en")
+        {
+            "en" => internet_uptime_monitor::i18n::Language::English,
+            "ru" => internet_uptime_monitor::i18n::Language::Russian,
+            "fr" => internet_uptime_monitor::i18n::Language::French,
+            "de" => internet_uptime_monitor::i18n::Language::German,
+            "es" => internet_uptime_monitor::i18n::Language::Spanish,
+            "it" => internet_uptime_monitor::i18n::Language::Italian,
+            value => bail!("Unknown screenshot language: {value}"),
+        };
+        let theme = match std::env::var("UPTIME_SCREENSHOT_THEME")
+            .as_deref()
+            .unwrap_or("light")
+        {
+            "light" => internet_uptime_monitor::i18n::Theme::Light,
+            "dark" => internet_uptime_monitor::i18n::Theme::Dark,
+            value => bail!("Unknown screenshot theme: {value}"),
+        };
+        Some((language, theme))
+    } else {
+        None
+    };
     if options.help {
         println!("Internet Uptime Monitor {}\n{HELP}", updates::VERSION);
         return Ok(0);
@@ -211,6 +246,10 @@ fn run() -> Result<i32> {
         seed_demo(&mut store)?;
     }
     let app = App::new(store, options.demo)?;
+    #[cfg(feature = "screenshots")]
+    if let Some((language, theme)) = capture_appearance {
+        app.set_appearance(language, theme)?;
+    }
     *app.cleanup_update.lock().expect("update startup") = options.cleanup_update;
     let executable = std::env::current_exe()?.canonicalize()?;
     let legacy = instance::legacy_update_port(&options.data, &executable);
@@ -245,9 +284,12 @@ fn run() -> Result<i32> {
         let data = options.data.clone();
         Some(std::thread::spawn(move || {
             if let Err(error) = tray::run(app.clone(), data) {
-                *app.ui_notice.lock().expect("notice") = Some(format!(
-                    "Tray unavailable: {error}. Keep the window open to continue monitoring."
-                ));
+                *app.ui_notice.lock().expect("notice") =
+                    Some(internet_uptime_monitor::i18n::message(
+                        app.snapshot().config.language,
+                        "Tray unavailable: {}. Keep the window open to continue monitoring.",
+                        &[error.to_string()],
+                    ));
                 app.request_window();
             }
         }))

@@ -57,7 +57,7 @@ pub enum Theme {
 fn catalog() -> &'static BTreeMap<String, [String; 5]> {
     static CATALOG: OnceLock<BTreeMap<String, [String; 5]>> = OnceLock::new();
     CATALOG.get_or_init(|| {
-        include_str!("../assets/locales.tsv")
+        include_str!("../assets/locales.psv")
             .lines()
             .map(|line| {
                 let mut fields = line.split('|');
@@ -127,6 +127,23 @@ pub fn diagnostic(language: Language, detail: &str) -> String {
                 return message(language, key, &[value.to_owned()]);
             }
         }
+        for (prefix, key) in [
+            (
+                "Could not open your startup preferences (",
+                "Could not open your startup preferences ({}).",
+            ),
+            (
+                "Could not update automatic startup (",
+                "Could not update automatic startup ({}).",
+            ),
+        ] {
+            if let Some(value) = detail
+                .strip_prefix(prefix)
+                .and_then(|rest| rest.strip_suffix(")."))
+            {
+                return message(language, key, &[value.to_owned()]);
+            }
+        }
     }
     detail.to_owned()
 }
@@ -137,6 +154,11 @@ mod tests {
     #[test]
     fn catalogs_preserve_placeholders_and_have_no_empty_translations() {
         assert!(catalog().len() > 150);
+        assert_eq!(
+            catalog().len(),
+            include_str!("../assets/locales.psv").lines().count(),
+            "duplicate message key"
+        );
         for (english, translations) in catalog() {
             let count = english.matches("{}").count();
             for translated in translations {

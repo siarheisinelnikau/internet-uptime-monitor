@@ -1,22 +1,22 @@
-Internet Uptime Monitor 0.2.2 moves Windows drawing to a CPU renderer with GDI presentation and fixes unnecessary event-loop work.
+Internet Uptime Monitor 0.3.0 adds six interface languages and a persistent dark theme while preserving your monitoring history and preferences.
+
+## Added
+
+- Choose English, Russian, French, German, Spanish, or Italian in **Settings → Appearance and language**. Navigation, connection status, outage history, settings, updates, and tray menus follow the selected language.
+- Switch between **Light** and **Dark** in the same settings card. Both language and theme apply immediately and save automatically.
+- Readable text exports follow the selected language. CSV and JSON retain their existing field names and UTC timestamps for compatibility.
 
 ## Improved
 
-- The Windows interface renders egui directly on the CPU and presents a bitmap through GDI, without creating an OpenGL or DirectX context. Linux and macOS continue to use the existing Glow renderer.
-- Windows paint events reuse the last rendered bitmap. UI frames follow repaint deadlines and are limited to roughly 60 per second during interaction.
-- Hidden and minimized windows skip rasterization and wait for events. Tray and duplicate-launch commands can still restore the window, and monitoring continues in the background.
-- Added an opt-in Windows regression that measures CPU use with a populated Overview visible, hidden, restored, and receiving pointer events.
-- Optional local frame timing is available through `UPTIME_RENDER_TRACE`; tracing is disabled by default.
-- README screenshots now show the CPU-rendered Overview and version 0.2.2 settings.
-
-## Validation
-
-Formatting, Clippy, all 30 standard tests, and the release build passed locally on Windows. Both interactive-desktop regressions passed against the packaged executable, covering tray restoration, background recording, hidden shutdown, and CPU use. The CPU regression measured 0.39–3.91% of one core across its idle states and 18.34% during pointer events on the test machine; results vary by hardware and workload.
+- Appearance changes preserve active monitoring and unsaved monitoring preferences. Upgrading from older settings uses English and Light without changing saved sampling or update preferences.
+- Dark mode applies to cards, inputs, selection, notices, charts, and text. Status labels use readable colors in both themes.
+- Local timestamps use an unambiguous numeric format. Addresses, target names, and technical OS/network details keep their original values.
+- Embedded catalogs validate all translations and interpolation placeholders. Focused regressions cover preference migration, saved appearance without a monitoring reset, and translated readable reports.
 
 ## Download and upgrade
 
-Download **InternetUptimeMonitor-v0.2.2.exe** for Windows 10/11 x64. This is one unsigned portable executable; no installer or browser runtime is required. **SHA256SUMS.txt** contains its SHA-256 checksum.
+Download **InternetUptimeMonitor-v0.3.0.exe** for Windows 10/11 x64. This is one unsigned portable executable; no installer or browser runtime is required. **SHA256SUMS.txt** contains its SHA-256 checksum.
 
-Version 0.2.1 can install this release through **Settings → Application updates → Check for updates → Download and install**. When upgrading from 0.2.0 or earlier, download and run the new EXE manually once because those older updaters require the previous unversioned asset name. Existing settings and history are preserved; portable users should place the new EXE beside their existing `data` folder and stop the old instance before starting it.
+Version 0.2.1 or newer can install this release through **Settings → Application updates → Check for updates → Download and install**. When upgrading from 0.2.0 or earlier, download and run the new EXE manually once because those older updaters require the previous unversioned asset name. Existing settings and history are preserved; portable users should place the new EXE beside their existing `data` folder and stop the old instance before starting it.
 
-[Changes since v0.2.1](https://github.com/siarheisinelnikau/internet-uptime-monitor/compare/v0.2.1...v0.2.2)
+[Changes since v0.2.2](https://github.com/siarheisinelnikau/internet-uptime-monitor/compare/v0.2.2...v0.3.0)
