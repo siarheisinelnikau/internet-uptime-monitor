@@ -1,0 +1,13 @@
+{
+  "repository": "siarheisinelnikau/internet-uptime-monitor",
+  "product": "InternetUptimeMonitor",
+  "kind": "desktop",
+  "assets": [
+    {
+      "name": "InternetUptimeMonitor-v{version}.exe",
+      "source": "internet-uptime-monitor.exe"
+    }
+  ],
+  "notices": false,
+  "checksum_aliases": []
+}
